@@ -2,57 +2,143 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Relate App</title>
+  <title>Relate 💜</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
+      font-family: "Poppins", sans-serif;
+      background: #f4f0ff;
+      color: #2c1250;
       text-align: center;
       margin: 0;
       padding: 0;
     }
+
     input, button {
       padding: 10px;
       margin: 6px;
-      border: none;
-      border-radius: 6px;
+      border: 1px solid #c9b6ff;
+      border-radius: 8px;
+      font-size: 15px;
     }
+
+    input {
+      background: #fff;
+      color: #2c1250;
+      width: 200px;
+    }
+
     button {
-      background-color: #ffcc00;
-      cursor: pointer;
+      background-color: #9b6bff;
+      color: #fff;
       font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
     }
-    #app {
-      margin-top: 50px;
+
+    button:hover {
+      background-color: #7b4df2;
     }
-    #searchSection {
-      margin-top: 20px;
+
+    #app { margin-top: 40px; }
+
+    #searchSection { display: none; margin-top: 20px; }
+
+    #requestsTab {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      background: #9b6bff;
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    #requestsSection {
+      display: none;
+      background: #fff;
+      color: #2c1250;
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      width: 300px;
+      max-height: 400px;
+      overflow-y: auto;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 0 15px rgba(155, 107, 255, 0.4);
+    }
+
+    .requestItem {
+      background: #f3ecff;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #d2b9ff;
+    }
+
+    .friendItem {
+      background: #f3ecff;
+      padding: 8px;
+      border-radius: 8px;
+      margin: 5px 0;
+      border: 1px solid #d2b9ff;
+    }
+
+    h1 {
+      color: #7b4df2;
+      font-size: 32px;
+    }
+
+    #friendsHeader {
+      margin-top: 25px;
+      font-weight: 600;
+    }
+
+    .counter {
+      font-size: 14px;
+      color: #6d5ca3;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <h1>Relate 💛</h1>
+    <h1>Relate 💜</h1>
 
-    <!-- Step 1: Enter Name -->
+    <!-- Login -->
     <div id="loginSection">
       <input id="nameInput" placeholder="Enter your name" />
       <button id="enterBtn">Enter</button>
     </div>
 
-    <!-- Step 2: Search Users -->
-    <div id="searchSection" style="display:none;">
+    <!-- Main Area -->
+    <div id="searchSection">
+      <button id="requestsTab">Requests</button>
       <h2>Welcome, <span id="displayName"></span>!</h2>
+
       <input id="searchInput" placeholder="Search user..." />
       <button id="searchBtn">Search</button>
       <div id="searchResult"></div>
+
+      <div id="friendsHeader">
+        <h3>Your Friends</h3>
+        <div class="counter" id="friendsCount"></div>
+      </div>
+      <div id="friendsList"></div>
     </div>
+
+    <!-- Requests Popup -->
+    <div id="requestsSection"></div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { 
+      getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc 
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
@@ -68,15 +154,15 @@
 
     let currentUser = "";
 
+    // --- LOGIN ---
     document.getElementById("enterBtn").addEventListener("click", async () => {
       const name = document.getElementById("nameInput").value.trim();
       if (!name) return alert("Please enter your name");
 
-      // Check if name exists
       const usersRef = collection(db, "users");
-      const usersSnap = await getDocs(usersRef);
-      const names = usersSnap.docs.map(d => d.data().name.toLowerCase());
-      
+      const snapshot = await getDocs(usersRef);
+      const names = snapshot.docs.map(d => d.data().name.toLowerCase());
+
       if (!names.includes(name.toLowerCase())) {
         await addDoc(usersRef, { name });
       }
@@ -85,33 +171,28 @@
       document.getElementById("displayName").textContent = name;
       document.getElementById("loginSection").style.display = "none";
       document.getElementById("searchSection").style.display = "block";
+
+      loadFriends();
     });
 
+    // --- SEARCH USER ---
     document.getElementById("searchBtn").addEventListener("click", async () => {
       const searchName = document.getElementById("searchInput").value.trim();
       const resultDiv = document.getElementById("searchResult");
       resultDiv.innerHTML = "";
 
-      if (!searchName) {
-        resultDiv.innerHTML = "Enter a name to search.";
-        return;
-      }
+      if (!searchName) return (resultDiv.textContent = "Enter a name to search.");
 
       const usersRef = collection(db, "users");
       const snapshot = await getDocs(usersRef);
-      const foundUser = snapshot.docs.find(doc => doc.data().name.toLowerCase() === searchName.toLowerCase());
+      const foundUser = snapshot.docs.find(
+        d => d.data().name.toLowerCase() === searchName.toLowerCase()
+      );
 
-      if (!foundUser) {
-        resultDiv.innerHTML = "No user found.";
-        return;
-      }
+      if (!foundUser) return (resultDiv.textContent = "No user found.");
+      if (searchName.toLowerCase() === currentUser.toLowerCase())
+        return (resultDiv.textContent = "That's you!");
 
-      if (searchName.toLowerCase() === currentUser.toLowerCase()) {
-        resultDiv.innerHTML = "That's you!";
-        return;
-      }
-
-      // Create a "Send Friend Request" button
       const btn = document.createElement("button");
       btn.textContent = `Send Friend Request to ${searchName}`;
       btn.onclick = async () => {
@@ -127,6 +208,86 @@
 
       resultDiv.appendChild(btn);
     });
+
+    // --- REQUESTS TAB ---
+    document.getElementById("requestsTab").addEventListener("click", async () => {
+      const box = document.getElementById("requestsSection");
+      box.innerHTML = "<h3>Friend Requests</h3>";
+
+      const q = query(collection(db, "requests"), where("to", "==", currentUser));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        box.innerHTML += "<p>No pending requests.</p>";
+      } else {
+        snap.forEach(r => {
+          const data = r.data();
+          if (data.status === "pending") {
+            const div = document.createElement("div");
+            div.className = "requestItem";
+            div.innerHTML = `<strong>${data.from}</strong> wants to be your friend<br>`;
+
+            const acceptBtn = document.createElement("button");
+            acceptBtn.textContent = "Accept";
+            acceptBtn.onclick = async () => {
+              await updateDoc(doc(db, "requests", r.id), { status: "accepted" });
+              alert(`${data.from} is now your friend!`);
+              loadFriends();
+              box.style.display = "none";
+            };
+
+            const declineBtn = document.createElement("button");
+            declineBtn.textContent = "Decline";
+            declineBtn.onclick = async () => {
+              await updateDoc(doc(db, "requests", r.id), { status: "rejected" });
+              alert(`You declined ${data.from}`);
+              box.style.display = "none";
+            };
+
+            div.appendChild(acceptBtn);
+            div.appendChild(declineBtn);
+            box.appendChild(div);
+          }
+        });
+      }
+
+      box.style.display = box.style.display === "none" ? "block" : "none";
+    });
+
+    // --- LOAD FRIENDS ---
+    async function loadFriends() {
+      const friendsDiv = document.getElementById("friendsList");
+      const counter = document.getElementById("friendsCount");
+      friendsDiv.innerHTML = "";
+      counter.innerHTML = "";
+
+      const q1 = query(collection(db, "requests"), where("from", "==", currentUser));
+      const q2 = query(collection(db, "requests"), where("to", "==", currentUser));
+      const snap1 = await getDocs(q1);
+      const snap2 = await getDocs(q2);
+
+      const friends = [];
+
+      snap1.forEach(r => {
+        const d = r.data();
+        if (d.status === "accepted") friends.push(d.to);
+      });
+      snap2.forEach(r => {
+        const d = r.data();
+        if (d.status === "accepted") friends.push(d.from);
+      });
+
+      if (friends.length === 0) {
+        counter.textContent = "You don’t have any friends yet.";
+      } else {
+        counter.textContent = `You have ${friends.length} friend${friends.length > 1 ? "s" : ""}.`;
+        friends.forEach(f => {
+          const div = document.createElement("div");
+          div.className = "friendItem";
+          div.textContent = f;
+          friendsDiv.appendChild(div);
+        });
+      }
+    }
   </script>
 </body>
 </html>
