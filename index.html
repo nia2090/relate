@@ -26,7 +26,7 @@
   <div id="screen1" class="screen active">
     <h2>Enter Your Name</h2>
     <input id="usernameInput" placeholder="Your name">
-    <button onclick="enterApp()">Enter</button>
+    <button id="enterBtn">Enter</button>
   </div>
 
   <div id="screen2" class="screen">
@@ -67,6 +67,11 @@
     const db = getFirestore(app);
 
     let currentUser = null;
+    document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("enterBtn");
+    btn.addEventListener("click", enterApp);
+    });
+
 
     async function enterApp() {
       const name = document.getElementById("usernameInput").value.trim();
