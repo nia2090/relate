@@ -1,58 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Relate</title>
   <style>
     body {
-      background-color: #121212;
-      color: white;
+      background-color: #000;
+      color: #ffeb3b;
       font-family: 'Poppins', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    h1 {
-      color: #ffcc00;
-      margin-bottom: 20px;
+      text-align: center;
+      padding-top: 100px;
     }
     input {
       padding: 10px;
+      font-size: 18px;
+      margin: 10px;
+      border-radius: 5px;
       border: none;
-      border-radius: 8px;
-      width: 250px;
-      font-size: 16px;
-      margin-bottom: 10px;
+      width: 200px;
       text-align: center;
     }
     button {
       padding: 10px 20px;
-      background-color: #ffcc00;
-      color: black;
+      font-size: 18px;
+      background-color: #ffeb3b;
       border: none;
-      border-radius: 8px;
+      border-radius: 5px;
       cursor: pointer;
-      font-weight: bold;
-      transition: background-color 0.2s ease;
+      color: #000;
+      transition: 0.3s;
     }
     button:hover {
-      background-color: #e6b800;
+      transform: scale(1.05);
+      background-color: #fff176;
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 40px;
     }
   </style>
 </head>
 <body>
   <h1>#relate</h1>
-  <input type="text" id="username" placeholder="Enter your name" />
+  <input id="username" placeholder="Enter your name" />
   <button id="enterBtn">Enter</button>
+  <div id="output"></div>
 
   <script type="module">
+    // Import Firebase SDKs
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // ✅ Firebase Configuration
+    // Your Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
       authDomain: "relate-8fed6.firebaseapp.com",
@@ -62,19 +62,37 @@
       appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
     };
 
-    // ✅ Initialize Firebase
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    // ✅ Add button listener
-    document.getElementById("enterBtn").addEventListener("click", () => {
+    const btn = document.getElementById("enterBtn");
+    const output = document.getElementById("output");
+
+    btn.addEventListener("click", async () => {
       const name = document.getElementById("username").value.trim();
-      if (name) {
-        document.body.innerHTML = `
-          <h2>Welcome ${name}, you are now inside Relate.</h2>
-          <p>Firebase is connected successfully ✅</p>
-        `;
-      } else {
-        alert("Please enter your name first!");
+      if (!name) {
+        alert("Please enter your name!");
+        return;
+      }
+
+      try {
+        // Save user to Firestore
+        await addDoc(collection(db, "users"), { name });
+
+        // Welcome message
+        output.innerHTML = `<h2>Welcome ${name}, you're now inside Relate 💛</h2>`;
+
+        // Load all users
+        const querySnapshot = await getDocs(collection(db, "users"));
+        output.innerHTML += "<h3>People who joined:</h3>";
+        querySnapshot.forEach((doc) => {
+          const user = doc.data().name;
+          output.innerHTML += `<p>👤 ${user}</p>`;
+        });
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Something went wrong connecting to Firebase. Check console for details.");
       }
     });
   </script>
