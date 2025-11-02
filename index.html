@@ -13,6 +13,14 @@
       padding: 0;
     }
 
+    .screen {
+      display: none;
+    }
+
+    .active {
+      display: block;
+    }
+
     input, button {
       padding: 8px;
       margin: 6px;
@@ -28,20 +36,38 @@
     #userList {
       margin-top: 20px;
     }
+
+    .user-card {
+      background: #222;
+      padding: 10px;
+      border-radius: 10px;
+      margin: 10px auto;
+      width: 60%;
+    }
   </style>
 </head>
 <body>
-  <h2>Enter Your Name</h2>
-  <input id="usernameInput" placeholder="Your name">
-  <button id="enterBtn">Enter</button>
+  <!-- Screen 1: Name -->
+  <div id="screen1" class="screen active">
+    <h2>Enter Your Name</h2>
+    <input id="usernameInput" placeholder="Your name">
+    <button id="enterBtn">Enter</button>
+    <div id="message"></div>
+  </div>
 
-  <div id="message"></div>
-  <div id="userList"></div>
+  <!-- Screen 2: Friends -->
+  <div id="screen2" class="screen">
+    <h2>Welcome, <span id="displayName"></span></h2>
+    <h3>Send Friend Requests</h3>
+    <div id="userList"></div>
+    <button id="refreshBtn">Refresh</button>
+  </div>
 
   <script type="module">
-    // Import Firebase libraries
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { 
+      getFirestore, collection, addDoc, getDocs, query, where 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // Firebase config
     const firebaseConfig = {
@@ -56,6 +82,16 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    const screen1 = document.getElementById("screen1");
+    const screen2 = document.getElementById("screen2");
+    const usernameInput = document.getElementById("usernameInput");
+    const enterBtn = document.getElementById("enterBtn");
+    const displayName = document.getElementById("displayName");
+    const userList = document.getElementById("userList");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const message = document.getElementById("message");
+
+    // Check if user already exists
     async function userExists(name) {
       const q = query(collection(db, "users"), where("name", "==", name));
       const snapshot = await getDocs(q);
@@ -64,39 +100,81 @@
 
     async function saveUser(name) {
       const exists = await userExists(name);
-      if (exists) {
-        document.getElementById("message").textContent = `Welcome back, ${name}!`;
-        console.log("User already exists:", name);
-        return false;
+      if (!exists) {
+        await addDoc(collection(db, "users"), { name });
+        console.log("User added:", name);
       }
-      await addDoc(collection(db, "users"), { name });
-      document.getElementById("message").textContent = `Welcome ${name}! You’re now inside Relate.`;
-      console.log("User added:", name);
-      return true;
     }
 
-    async function loadUsers() {
+    async function loadUsers(excludeName) {
       const snapshot = await getDocs(collection(db, "users"));
-      return snapshot.docs.map(doc => doc.data().name);
+      return snapshot.docs
+        .map(doc => doc.data().name)
+        .filter(n => n !== excludeName);
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const btn = document.getElementById("enterBtn");
-      const input = document.getElementById("usernameInput");
-      const list = document.getElementById("userList");
-
-      btn.addEventListener("click", async () => {
-        const name = input.value.trim();
-        if (!name) {
-          alert("Please enter your name");
-          return;
-        }
-
-        await saveUser(name);
-        const all = await loadUsers();
-        list.innerHTML = "<h3>All users:</h3>" + all.map(n => `<p>${n}</p>`).join("");
+    async function sendFriendRequest(from, to) {
+      await addDoc(collection(db, "requests"), {
+        from,
+        to,
+        status: "pending",
+        time: Date.now()
       });
+      alert(`Friend request sent to ${to}!`);
+    }
+
+    async function renderUsers(currentUser) {
+      const users = await loadUsers(currentUser);
+      userList.innerHTML = "";
+      if (users.length === 0) {
+        userList.innerHTML = "<p>No other users yet.</p>";
+        return;
+      }
+
+      users.forEach(name => {
+        const div = document.createElement("div");
+        div.classList.add("user-card");
+        div.innerHTML = `
+          <strong>${name}</strong><br>
+          <button class="reqBtn">Send Request</button>
+        `;
+        const btn = div.querySelector(".reqBtn");
+        btn.addEventListener("click", () => sendFriendRequest(currentUser, name));
+        userList.appendChild(div);
+      });
+    }
+
+    enterBtn.addEventListener("click", async () => {
+      const name = usernameInput.value.trim();
+      if (!name) {
+        message.textContent = "Please enter a name.";
+        return;
+      }
+
+      await saveUser(name);
+      localStorage.setItem("relateUser", name);
+
+      displayName.textContent = name;
+      screen1.classList.remove("active");
+      screen2.classList.add("active");
+      renderUsers(name);
     });
+
+    refreshBtn.addEventListener("click", async () => {
+      const name = localStorage.getItem("relateUser");
+      if (name) renderUsers(name);
+    });
+
+    // Auto login if already saved
+    const saved = localStorage.getItem("relateUser");
+    if (saved) {
+      displayName.textContent = saved;
+      screen1.classList.remove("active");
+      screen2.classList.add("active");
+      renderUsers(saved);
+    }
   </script>
 </body>
 </html>
+
+
