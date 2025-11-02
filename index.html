@@ -1,75 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Relate</title>
+  <meta charset="UTF-8" />
+  <title>Relate App</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      text-align: center;
       background: #111;
       color: #fff;
+      text-align: center;
       margin: 0;
       padding: 0;
     }
-
-    .screen {
-      display: none;
-    }
-
-    .active {
-      display: block;
-    }
-
     input, button {
-      padding: 8px;
-      margin: 6px;
-      border-radius: 5px;
-      border: none;
-    }
-
-    button {
-      background: #ffcc00;
-      cursor: pointer;
-    }
-
-    #userList {
-      margin-top: 20px;
-    }
-
-    .user-card {
-      background: #222;
       padding: 10px;
-      border-radius: 10px;
-      margin: 10px auto;
-      width: 60%;
+      margin: 6px;
+      border: none;
+      border-radius: 6px;
+    }
+    button {
+      background-color: #ffcc00;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #app {
+      margin-top: 50px;
+    }
+    #searchSection {
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <!-- Screen 1: Name -->
-  <div id="screen1" class="screen active">
-    <h2>Enter Your Name</h2>
-    <input id="usernameInput" placeholder="Your name">
-    <button id="enterBtn">Enter</button>
-    <div id="message"></div>
-  </div>
+  <div id="app">
+    <h1>Relate 💛</h1>
 
-  <!-- Screen 2: Friends -->
-  <div id="screen2" class="screen">
-    <h2>Welcome, <span id="displayName"></span></h2>
-    <h3>Send Friend Requests</h3>
-    <div id="userList"></div>
-    <button id="refreshBtn">Refresh</button>
+    <!-- Step 1: Enter Name -->
+    <div id="loginSection">
+      <input id="nameInput" placeholder="Enter your name" />
+      <button id="enterBtn">Enter</button>
+    </div>
+
+    <!-- Step 2: Search Users -->
+    <div id="searchSection" style="display:none;">
+      <h2>Welcome, <span id="displayName"></span>!</h2>
+      <input id="searchInput" placeholder="Search user..." />
+      <button id="searchBtn">Search</button>
+      <div id="searchResult"></div>
+    </div>
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { 
-      getFirestore, collection, addDoc, getDocs, query, where 
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
       authDomain: "relate-8fed6.firebaseapp.com",
@@ -82,99 +66,67 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const screen1 = document.getElementById("screen1");
-    const screen2 = document.getElementById("screen2");
-    const usernameInput = document.getElementById("usernameInput");
-    const enterBtn = document.getElementById("enterBtn");
-    const displayName = document.getElementById("displayName");
-    const userList = document.getElementById("userList");
-    const refreshBtn = document.getElementById("refreshBtn");
-    const message = document.getElementById("message");
+    let currentUser = "";
 
-    // Check if user already exists
-    async function userExists(name) {
-      const q = query(collection(db, "users"), where("name", "==", name));
-      const snapshot = await getDocs(q);
-      return !snapshot.empty;
-    }
+    document.getElementById("enterBtn").addEventListener("click", async () => {
+      const name = document.getElementById("nameInput").value.trim();
+      if (!name) return alert("Please enter your name");
 
-    async function saveUser(name) {
-      const exists = await userExists(name);
-      if (!exists) {
-        await addDoc(collection(db, "users"), { name });
-        console.log("User added:", name);
+      // Check if name exists
+      const usersRef = collection(db, "users");
+      const usersSnap = await getDocs(usersRef);
+      const names = usersSnap.docs.map(d => d.data().name.toLowerCase());
+      
+      if (!names.includes(name.toLowerCase())) {
+        await addDoc(usersRef, { name });
       }
-    }
 
-    async function loadUsers(excludeName) {
-      const snapshot = await getDocs(collection(db, "users"));
-      return snapshot.docs
-        .map(doc => doc.data().name)
-        .filter(n => n !== excludeName);
-    }
+      currentUser = name;
+      document.getElementById("displayName").textContent = name;
+      document.getElementById("loginSection").style.display = "none";
+      document.getElementById("searchSection").style.display = "block";
+    });
 
-    async function sendFriendRequest(from, to) {
-      await addDoc(collection(db, "requests"), {
-        from,
-        to,
-        status: "pending",
-        time: Date.now()
-      });
-      alert(`Friend request sent to ${to}!`);
-    }
+    document.getElementById("searchBtn").addEventListener("click", async () => {
+      const searchName = document.getElementById("searchInput").value.trim();
+      const resultDiv = document.getElementById("searchResult");
+      resultDiv.innerHTML = "";
 
-    async function renderUsers(currentUser) {
-      const users = await loadUsers(currentUser);
-      userList.innerHTML = "";
-      if (users.length === 0) {
-        userList.innerHTML = "<p>No other users yet.</p>";
+      if (!searchName) {
+        resultDiv.innerHTML = "Enter a name to search.";
         return;
       }
 
-      users.forEach(name => {
-        const div = document.createElement("div");
-        div.classList.add("user-card");
-        div.innerHTML = `
-          <strong>${name}</strong><br>
-          <button class="reqBtn">Send Request</button>
-        `;
-        const btn = div.querySelector(".reqBtn");
-        btn.addEventListener("click", () => sendFriendRequest(currentUser, name));
-        userList.appendChild(div);
-      });
-    }
+      const usersRef = collection(db, "users");
+      const snapshot = await getDocs(usersRef);
+      const foundUser = snapshot.docs.find(doc => doc.data().name.toLowerCase() === searchName.toLowerCase());
 
-    enterBtn.addEventListener("click", async () => {
-      const name = usernameInput.value.trim();
-      if (!name) {
-        message.textContent = "Please enter a name.";
+      if (!foundUser) {
+        resultDiv.innerHTML = "No user found.";
         return;
       }
 
-      await saveUser(name);
-      localStorage.setItem("relateUser", name);
+      if (searchName.toLowerCase() === currentUser.toLowerCase()) {
+        resultDiv.innerHTML = "That's you!";
+        return;
+      }
 
-      displayName.textContent = name;
-      screen1.classList.remove("active");
-      screen2.classList.add("active");
-      renderUsers(name);
+      // Create a "Send Friend Request" button
+      const btn = document.createElement("button");
+      btn.textContent = `Send Friend Request to ${searchName}`;
+      btn.onclick = async () => {
+        const requestsRef = collection(db, "requests");
+        await addDoc(requestsRef, {
+          from: currentUser,
+          to: searchName,
+          status: "pending"
+        });
+        alert(`✅ Friend request sent to ${searchName}`);
+        resultDiv.innerHTML = "";
+      };
+
+      resultDiv.appendChild(btn);
     });
-
-    refreshBtn.addEventListener("click", async () => {
-      const name = localStorage.getItem("relateUser");
-      if (name) renderUsers(name);
-    });
-
-    // Auto login if already saved
-    const saved = localStorage.getItem("relateUser");
-    if (saved) {
-      displayName.textContent = saved;
-      screen1.classList.remove("active");
-      screen2.classList.add("active");
-      renderUsers(saved);
-    }
   </script>
 </body>
 </html>
-
-
