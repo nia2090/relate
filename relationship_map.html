@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Relationship Map</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #111;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    .screen {
+      display: none;
+      padding: 20px;
+    }
+    .active {
+      display: block;
+    }
+    input, button {
+      padding: 8px;
+      margin: 6px;
+      border-radius: 5px;
+      border: none;
+    }
+    button {
+      background: #ffcc00;
+      cursor: pointer;
+    }
+    canvas {
+      background: #222;
+      margin-top: 20px;
+      border: 1px solid #444;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen 1: Enter Name -->
+  <div id="screen1" class="screen active">
+    <h2>Enter Your Name</h2>
+    <input id="usernameInput" placeholder="Your name">
+    <button onclick="enterApp()">Enter</button>
+  </div>
+
+  <!-- Screen 2: Search -->
+  <div id="screen2" class="screen">
+    <h2>Welcome, <span id="displayName"></span>!</h2>
+    <p>Search for a friend:</p>
+    <input id="searchInput" placeholder="Friend name">
+    <button onclick="searchUser()">Search</button>
+    <div id="searchResult"></div>
+    <br>
+    <button onclick="showMap()">View Relationship Map</button>
+  </div>
+
+  <!-- Screen 3: Map -->
+  <div id="screen3" class="screen">
+    <h2>Relationship Map</h2>
+    <canvas id="map" width="600" height="400"></canvas><br>
+    <button onclick="backToSearch()">Back</button>
+  </div>
+
+  <script>
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+    let currentUser = null;
+
+    function enterApp() {
+      const name = document.getElementById('usernameInput').value.trim();
+      if (!name) {
+        alert('Please enter your name');
+        return;
+      }
+
+      // check if user exists, else create
+      let user = users.find(u => u.name === name);
+      if (!user) {
+        user = { name, friends: [] };
+        users.push(user);
+        localStorage.setItem('users', JSON.stringify(users));
+      }
+      currentUser = user;
+      document.getElementById('displayName').textContent = name;
+      showScreen(2);
+    }
+
+    function searchUser() {
+      const searchName = document.getElementById('searchInput').value.trim();
+      const resultDiv = document.getElementById('searchResult');
+      const found = users.find(u => u.name === searchName);
+
+      if (!searchName) {
+        resultDiv.textContent = "Enter a name to search.";
+        return;
+      }
+
+      if (!found) {
+        resultDiv.textContent = "User not found.";
+        return;
+      }
+
+      if (found.name === currentUser.name) {
+        resultDiv.textContent = "That's you!";
+        return;
+      }
+
+      // check if already friends
+      const already = currentUser.friends.find(f => f.name === found.name);
+      if (already) {
+        resultDiv.textContent = `${found.name} is already your ${already.relation}.`;
+        return;
+      }
+
+      // ask for relationship type
+      const relation = prompt(`Enter relationship type with ${found.name} (friend, enemy, crush, etc.):`);
+      if (!relation) return;
+
+      // add for both users
+      currentUser.friends.push({ name: found.name, relation });
+      found.friends.push({ name: currentUser.name, relation });
+
+      localStorage.setItem('users', JSON.stringify(users));
+      resultDiv.textContent = `${found.name} added as ${relation}.`;
+    }
+
+    function showMap() {
+      showScreen(3);
+      drawMap();
+    }
+
+    function backToSearch() {
+      showScreen(2);
+    }
+
+    function showScreen(num) {
+      document.querySelectorAll('.screen').forEach((s, i) => {
+        s.classList.toggle('active', i === num - 1);
+      });
+    }
+
+    function drawMap() {
+      const canvas = document.getElementById('map');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!currentUser || currentUser.friends.length === 0) {
+        ctx.fillStyle = "#fff";
+        ctx.fillText("No friends to display yet!", 220, 200);
+        return;
+      }
+
+      // center user
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      ctx.fillStyle = "#ffcc00";
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.fillText(currentUser.name, centerX - 15, centerY + 5);
+
+      // draw friends around in a circle
+      const count = currentUser.friends.length;
+      const radius = 120;
+      const angleStep = (2 * Math.PI) / count;
+
+      currentUser.friends.forEach((f, i) => {
+        const angle = i * angleStep;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+
+        // draw connection line
+        switch (f.relation.toLowerCase()) {
+          case "friend": ctx.strokeStyle = "yellow"; break;
+          case "enemy": ctx.strokeStyle = "red"; break;
+          case "crush": ctx.strokeStyle = "pink"; break;
+          default: ctx.strokeStyle = "lightblue";
+        }
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        // draw friend node
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(x, y, 20, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.fillStyle = "#000";
+        ctx.fillText(f.name, x - 10, y + 5);
+      });
+    }
+  </script>
+</body>
+</html>
