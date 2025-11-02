@@ -39,11 +39,11 @@
   <div id="userList"></div>
 
   <script type="module">
-    // Import Firebase libraries directly from CDN
+    // Import Firebase libraries
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Your Firebase config
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
       authDomain: "relate-8fed6.firebaseapp.com",
@@ -53,19 +53,26 @@
       appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
     };
 
-    // Initialize Firebase + Firestore
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    async function userExists(name) {
+      const q = query(collection(db, "users"), where("name", "==", name));
+      const snapshot = await getDocs(q);
+      return !snapshot.empty;
+    }
+
     async function saveUser(name) {
-      try {
-        await addDoc(collection(db, "users"), { name });
-        console.log("User added:", name);
-        document.getElementById("message").textContent = `Welcome ${name}! You’re now inside Relate.`;
-      } catch (e) {
-        console.error("Error adding user:", e);
-        document.getElementById("message").textContent = "Error saving name.";
+      const exists = await userExists(name);
+      if (exists) {
+        document.getElementById("message").textContent = `Welcome back, ${name}!`;
+        console.log("User already exists:", name);
+        return false;
       }
+      await addDoc(collection(db, "users"), { name });
+      document.getElementById("message").textContent = `Welcome ${name}! You’re now inside Relate.`;
+      console.log("User added:", name);
+      return true;
     }
 
     async function loadUsers() {
@@ -86,7 +93,6 @@
         }
 
         await saveUser(name);
-
         const all = await loadUsers();
         list.innerHTML = "<h3>All users:</h3>" + all.map(n => `<p>${n}</p>`).join("");
       });
