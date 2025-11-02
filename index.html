@@ -3,605 +3,838 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Relate — Local Prototype</title>
+<title>Relate — Map & Connections</title>
+<link rel="icon" href="data:," />
 <style>
   :root{
-    --bg:#1a0033; --card:#2b0046; --accent:#9b6bff; --muted:#c9b6ff; --white:#ffffff;
+    --bg:#120018; --card:#1f0630; --accent:#9b6bff; --muted:#cdb8ff; --white:#ffffff;
     --blue:#70c6ff; --green:#6ee07a; --yellow:#ffd24d; --pink:#ff90d0; --red:#ff6b6b; --whiteRel:#ffffff;
   }
   html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--white)}
-  .wrap{display:flex;gap:18px;padding:18px;box-sizing:border-box;height:100%}
-  .sidebar{width:320px;background:linear-gradient(180deg,#250033,#22002d);border-radius:12px;padding:12px;box-sizing:border-box;overflow:auto}
+  .container{display:flex;gap:18px;padding:18px;box-sizing:border-box;height:100%}
+  .sidebar{width:320px;background:linear-gradient(180deg,#22002d,#1a0023);border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,0.6);overflow:auto}
   h1{margin:4px 0;color:var(--accent)}
   label{display:block;margin-top:10px;font-size:13px;color:var(--muted)}
-  input[type="text"], select, textarea {width:100%;padding:10px;border-radius:8px;border:none;margin-top:6px;background:#fff;color:#111;box-sizing:border-box}
+  input[type="text"], input[type="password"], select, textarea {width:100%;padding:10px;border-radius:8px;border:none;margin-top:6px;background:#fff;color:#111;box-sizing:border-box}
   button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
-  .usersList{margin-top:12px;max-height:46vh;overflow:auto}
+  .usersList{margin-top:12px;max-height:40vh;overflow:auto}
   .userRow{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,0.03)}
   .small{font-size:12px;color:var(--muted)}
   .main{flex:1;display:flex;flex-direction:column}
-  .mapCard{flex:1;background:linear-gradient(180deg,#170022,#0f0018);border-radius:12px;padding:12px;display:flex;flex-direction:column;box-shadow:0 6px 20px rgba(0,0,0,0.6)}
-  .mapArea{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+  .card{background:linear-gradient(180deg,#170022,#0f0018);border-radius:12px;padding:12px;display:flex;flex-direction:column;box-shadow:0 6px 20px rgba(0,0,0,0.6);height:100%}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .mapArea{flex:1;display:flex;align-items:center;justify-content:center;position:relative;border-radius:8px;overflow:hidden}
   svg{width:100%;height:100%}
   .tooltip{position:absolute;pointer-events:none;background:linear-gradient(180deg,#3b0064,#6200b0);padding:8px;border-radius:8px;color:#fff;font-size:13px;transform:translate(-50%,-120%);white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.6)}
-  .profile{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:320px;background:var(--card);border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+  .overlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:320px;background:var(--card);border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,0.6);z-index:999}
   .relSelect{width:100%;padding:8px;border-radius:8px;border:none;margin-top:8px}
-  .infoSmall{font-size:13px;color:var(--muted)}
-  .requestsBox{background:#fff;color:#111;padding:10px;border-radius:8px;margin-top:8px;max-height:220px;overflow:auto}
-  .requestItem{display:flex;justify-content:space-between;align-items:center;padding:6px;border-radius:6px;background:#f6f3ff;margin-bottom:6px}
-  .chatBox{background:#fff;color:#111;padding:10px;border-radius:8px;margin-top:8px}
-  .chatMessages{height:140px;overflow:auto;background:#eee;padding:8px;border-radius:6px}
-  .msg{padding:6px;margin:6px;border-radius:8px;display:inline-block}
-  .msg.you{background:#dfeaff;align-self:flex-end}
-  .msg.them{background:#ffeef2}
-  .tick{color:#6ee07a;font-weight:900;margin-left:6px}
-  .smallMuted{font-size:12px;color:#bdb0ff}
-  .actionSmall{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 8px;border-radius:6px;color:var(--muted);cursor:pointer}
+  .smallMuted{font-size:12px;color:var(--muted)}
+  .requestsBox{background:#fff;color:#111;padding:10px;border-radius:8px;margin-top:8px;max-height:240px;overflow:auto}
+  .requestItem{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#f6f3ff;margin-bottom:8px}
+  .friendsList{margin-top:12px}
+  .friendItem{background:rgba(255,255,255,0.03);padding:8px;border-radius:8px;margin-bottom:6px}
+  .tabRow{display:flex;gap:8px;margin-bottom:8px}
+  .tabRow button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px}
+  .activeTab{background:var(--accent);color:#fff;border:none}
+  .badge{background:rgba(155,107,255,0.18);padding:6px 10px;border-radius:999px;color:var(--muted);font-weight:600}
+  .quickPhrases{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .quickPhrases button{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 8px;border-radius:6px;color:var(--muted)}
+  .muted{color:var(--muted);font-size:13px}
+  .node-center{fill:#cfa0ff;stroke:#fff;stroke-width:2}
+  .node-conn{fill:#70c6ff;stroke:#fff;stroke-width:1}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="container">
+  <!-- SIDEBAR -->
   <div class="sidebar">
-    <h1>Relate (local)</h1>
+    <h1>Relate</h1>
 
-    <div id="entry">
+    <!-- Login -->
+    <div id="loginPanel">
       <label>Name</label>
-      <input id="nameInput" placeholder="Your name (e.g. Nisa)">
+      <input id="loginName" placeholder="Your name (e.g. Nisa)" />
+      <label>Password</label>
+      <input id="loginPass" type="password" placeholder="Choose a password / enter to login" />
       <label>Class</label>
-      <select id="classSelect"><option value="">Select class</option></select>
+      <select id="loginClass"><option value="">Select class</option></select>
       <div style="display:flex;gap:8px;margin-top:10px">
-        <button id="enterBtn">Enter</button>
-        <button id="logoutBtn" style="display:none;background:#444">Logout</button>
+        <button id="btnEnter">Enter</button>
+        <button id="btnLogout" style="display:none;background:#444">Logout</button>
       </div>
-      <div style="margin-top:8px" class="smallMuted">Logged in as: <span id="logged">—</span></div>
+      <div style="margin-top:8px" class="smallMuted">Logged in as: <span id="who">—</span></div>
     </div>
 
     <hr style="border:none;height:1px;background:rgba(255,255,255,0.04);margin:12px 0">
 
+    <!-- Tabs -->
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div class="small">People</div>
-      <div class="smallMuted">Requests: <span id="pendingCount">0</span></div>
+      <div><span class="badge" id="reqBadge">0</span></div>
     </div>
+
+    <!-- Users list -->
     <div class="usersList" id="usersList"></div>
 
-    <div style="margin-top:12px">
-      <div class="small" style="margin-bottom:6px">Export / Import state (manual sync)</div>
-      <textarea id="stateArea" rows="4" style="width:100%;"></textarea>
-      <div style="display:flex;gap:8px;margin-top:6px">
-        <button id="exportBtn">Copy state</button>
-        <button id="importBtn" style="background:#444">Paste state</button>
-        <button id="refreshBtn" style="background:#333">Refresh</button>
-      </div>
-      <div class="smallMuted" style="margin-top:8px">Use copy/paste between browsers to simulate multi-user.</div>
+    <hr style="border:none;height:1px;background:rgba(255,255,255,0.04);margin:12px 0">
+
+    <!-- Suggestions -->
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><div class="small">You Might Know</div><div class="smallMuted">auto</div></div>
+      <div id="suggestions" style="margin-top:8px"></div>
     </div>
+
   </div>
 
+  <!-- MAIN -->
   <div class="main">
-    <div class="mapCard">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div class="infoSmall">Map — center is you. Hover for quick info. Click for profile.</div>
-        <div><button id="showRequestsBtn" class="actionSmall">Show requests</button></div>
+    <div class="card">
+      <div class="topbar">
+        <div>
+          <div class="tabRow" role="tablist">
+            <button id="tabRequests">Requests</button>
+            <button id="tabMessages">Messages</button>
+            <button id="tabMap" class="activeTab">Map</button>
+            <button id="tabSearch">Search</button>
+            <button id="tabConnections">Connections</button>
+          </div>
+          <div class="muted" id="subInfo">Hover nodes for info — click to open profile</div>
+        </div>
+        <div>
+          <button id="btnRefresh" style="background:#321a4d">Refresh</button>
+        </div>
       </div>
 
-      <div class="mapArea" id="mapArea">
-        <svg id="svgMap" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet"></svg>
+      <!-- CONTENT AREAS -->
+      <div id="contentRequests" style="display:none">
+        <div class="requestsBox" id="requestsBox"></div>
+      </div>
+
+      <div id="contentMessages" style="display:none">
+        <div><strong>Quick messages</strong></div>
+        <div class="quickPhrases" id="quickPhrases"></div>
+        <div style="margin-top:12px"><strong>Active chat</strong></div>
+        <div id="chatArea"></div>
+      </div>
+
+      <div id="contentMap" class="mapArea">
+        <svg id="mapSvg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet"></svg>
         <div id="tooltip" class="tooltip" style="display:none"></div>
-        <div id="profileDiv" class="profile" style="display:none"></div>
+        <div id="overlay" class="overlay" style="display:none"></div>
       </div>
 
-      <div style="margin-top:10px;color:var(--muted);font-size:13px">Quick chat phrases: <button class="actionSmall" data-phrase="Hi">Hi</button> <button class="actionSmall" data-phrase="Bye">Bye</button> <button class="actionSmall" data-phrase="BRB">BRB</button> <button class="actionSmall" data-phrase="Call">Call</button></div>
+      <div id="contentSearch" style="display:none">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="searchInput" placeholder="Search user..." />
+          <button id="searchBtn">Search</button>
+        </div>
+        <div style="margin-top:12px" id="searchResult"></div>
+      </div>
+
+      <div id="contentConnections" style="display:none">
+        <div><strong>Your Connections</strong></div>
+        <div id="connectionsList" class="friendsList"></div>
+      </div>
+
     </div>
   </div>
 </div>
 
-<script>
-/* -----------------------
-  Local Relate Prototype
-  All data stored under localStorage key 'relate_state'
-------------------------*/
+<!-- Firebase + App -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import {
+    getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, addDoc, updateDoc, orderBy, limit
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-const RELATE_KEY = 'relate_state_v1';
+  // ---------- config (your project) ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
+    authDomain: "relate-8fed6.firebaseapp.com",
+    projectId: "relate-8fed6",
+    storageBucket: "relate-8fed6.firebasestorage.app",
+    messagingSenderId: "189997542155",
+    appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
+  };
 
-// init UI refs
-const nameInput = document.getElementById('nameInput');
-const classSelect = document.getElementById('classSelect');
-const enterBtn = document.getElementById('enterBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const usersList = document.getElementById('usersList');
-const logged = document.getElementById('logged');
-const pendingCount = document.getElementById('pendingCount');
-const svgMap = document.getElementById('svgMap');
-const tooltip = document.getElementById('tooltip');
-const profileDiv = document.getElementById('profileDiv');
-const stateArea = document.getElementById('stateArea');
-const exportBtn = document.getElementById('exportBtn');
-const importBtn = document.getElementById('importBtn');
-const refreshBtn = document.getElementById('refreshBtn');
-const showRequestsBtn = document.getElementById('showRequestsBtn');
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-// populate classes 1..12
-for(let i=1;i<=12;i++){
-  const o = document.createElement('option'); o.value = i; o.textContent = `Class ${i}`; classSelect.appendChild(o);
-}
-
-/* --------- State model (localStorage) ----------
-state = {
-  users: [{ name, class }],
-  requests: [{ from, to, time }],   // pending only
-  connections: [{ id, userA, userB, typeA, typeB, lastChangedA, lastChangedB }], // relation doc; typeX null or a string
-  notifications: [{ to, text, time, seen }],
-  messages: [{ chatId, from, to, text, time }]
-}
--------------------------------------------------*/
-
-function loadState(){
-  const raw = localStorage.getItem(RELATE_KEY);
-  if(!raw) {
-    const base = { users: [], requests: [], connections: [], notifications: [], messages: [] };
-    localStorage.setItem(RELATE_KEY, JSON.stringify(base));
-    return base;
+  // ---------- utility: SHA-256 hashing for password ----------
+  async function sha256(str){
+    const enc = new TextEncoder();
+    const buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
   }
-  try { return JSON.parse(raw); } catch(e){ console.error('bad state'); return { users:[],requests:[],connections:[],notifications:[],messages:[] }; }
-}
-function saveState(s){ localStorage.setItem(RELATE_KEY, JSON.stringify(s)); }
 
-let state = loadState();
+  // ---------- DOM refs ----------
+  const loginName = document.getElementById('loginName');
+  const loginPass = document.getElementById('loginPass');
+  const loginClass = document.getElementById('loginClass');
+  const btnEnter = document.getElementById('btnEnter');
+  const btnLogout = document.getElementById('btnLogout');
+  const who = document.getElementById('who');
+  const usersList = document.getElementById('usersList');
+  const suggestionsDiv = document.getElementById('suggestions');
+  const reqBadge = document.getElementById('reqBadge');
 
-// currentUser {name,class} or null
-let currentUser = JSON.parse(localStorage.getItem('relate_current')) || null;
+  const tabRequests = document.getElementById('tabRequests');
+  const tabMessages = document.getElementById('tabMessages');
+  const tabMap = document.getElementById('tabMap');
+  const tabSearch = document.getElementById('tabSearch');
+  const tabConnections = document.getElementById('tabConnections');
 
-/* ---------- Helpers ---------- */
-function findUserByName(name){ return state.users.find(u=>u.name.toLowerCase()===name.toLowerCase()); }
-function connectionId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__'); }
-function addNotification(to, text){
-  state.notifications.push({ to, text, time: Date.now(), seen:false });
-  saveState(state);
-}
-function messagesChatId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__'); }
+  const contentRequests = document.getElementById('contentRequests');
+  const contentMessages = document.getElementById('contentMessages');
+  const contentMap = document.getElementById('contentMap');
+  const contentSearch = document.getElementById('contentSearch');
+  const contentConnections = document.getElementById('contentConnections');
 
-/* ---------- UI rendering ---------- */
+  const requestsBox = document.getElementById('requestsBox');
+  const quickPhrasesDiv = document.getElementById('quickPhrases');
+  const chatArea = document.getElementById('chatArea');
+  const mapSvg = document.getElementById('mapSvg');
+  const tooltip = document.getElementById('tooltip');
+  const overlay = document.getElementById('overlay');
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const searchResult = document.getElementById('searchResult');
+  const connectionsList = document.getElementById('connectionsList');
+  const btnRefresh = document.getElementById('btnRefresh');
 
-function renderUsersList(){
-  usersList.innerHTML='';
-  const others = state.users.filter(u => !currentUser || u.name.toLowerCase() !== currentUser.name.toLowerCase());
-  others.sort((a,b)=>a.name.localeCompare(b.name));
-  others.forEach(u=>{
-    const row = document.createElement('div'); row.className='userRow';
-    const left = document.createElement('div'); left.innerHTML = `<div style="font-weight:700">${u.name}</div><div class="small">Class ${u.class||'–'}</div>`;
-    const right = document.createElement('div');
-    // show tick if request sent or connected
-    const sent = state.requests.some(r => r.from.toLowerCase()=== (currentUser?currentUser.name.toLowerCase():'') && r.to.toLowerCase()===u.name.toLowerCase());
-    const connected = state.connections.some(c => (c.userA.toLowerCase()===u.name.toLowerCase() && c.userB.toLowerCase()=== (currentUser?currentUser.name.toLowerCase():'')) || (c.userB.toLowerCase()===u.name.toLowerCase() && c.userA.toLowerCase()=== (currentUser?currentUser.name.toLowerCase():'')));
-    const addBtn = document.createElement('button'); addBtn.textContent = sent || connected ? (connected? '✓':'Sent') : '+';
-    addBtn.title = connected ? 'Connected' : (sent ? 'Request sent' : 'Send request');
-    addBtn.disabled = sent || connected || !currentUser;
-    addBtn.onclick = async ()=>{
-      // send request
-      state.requests.push({ from: currentUser.name, to: u.name, time: Date.now() });
-      saveState(state);
-      renderUsersList();
-      await updatePendingCount();
-      alert(`✅ Friend request sent to ${u.name}`);
-    };
-    right.appendChild(addBtn);
-    row.appendChild(left); row.appendChild(right);
-    usersList.appendChild(row);
+  // populate classes
+  for(let i=1;i<=12;i++){ const o=document.createElement('option');o.value=i;o.textContent=`Class ${i}`; loginClass.appendChild(o); }
+
+  // quick phrases
+  const canned = ['hi','bye','brb','ttyl','wsp','good','wow','ok','gtg'];
+  canned.forEach(p=>{
+    const b=document.createElement('button'); b.textContent=p; b.onclick = ()=> sendQuickPhrase(p); quickPhrasesDiv.appendChild(b);
   });
-}
 
-async function updatePendingCount(){
-  if(!currentUser){ pendingCount.textContent='0'; return; }
-  const count = state.requests.filter(r => r.to.toLowerCase()===currentUser.name.toLowerCase()).length;
-  pendingCount.textContent = String(count);
-}
+  // ---------- App state ----------
+  // currentUser: { name, class }
+  let currentUser = JSON.parse(localStorage.getItem('relate_current')) || null;
 
-function renderMap(){
-  svgMap.innerHTML = '';
-  tooltip.style.display='none';
-  profileDiv.style.display='none';
-  if(!currentUser) return;
-  // Build nodes: center is currentUser, friends around + mutuals that connect through them
-  const center = { name: currentUser.name, x:500, y:350, r:26, isCenter:true };
-  // who are connections (connected but not necessarily relation set)
-  const direct = [];
-  state.connections.forEach(c=>{
-    const a = c.userA, b = c.userB;
-    if(a.toLowerCase()===currentUser.name.toLowerCase()) direct.push(b);
-    else if(b.toLowerCase()===currentUser.name.toLowerCase()) direct.push(a);
-  });
-  // unique
-  const friendNames = Array.from(new Set(direct));
-  // pick positions – use deterministic angle from name hash for stable layout
-  const nodes = [center];
-  const count = friendNames.length;
-  const radius = Math.min(260, 100 + count * 26);
-  friendNames.forEach((nm,i)=>{
-    // deterministic angle
-    const hash = Array.from(nm).reduce((s,ch)=>s+ch.charCodeAt(0),0);
-    const angle = (hash % 360) * Math.PI / 180 + (i*0.5);
-    const x = 500 + radius * Math.cos(angle);
-    const y = 350 + radius * Math.sin(angle);
-    nodes.push({ name: nm, x, y, r:20, isCenter:false });
-  });
-  // Also include mutual connections among those friends (connections between them) so that lines show
-  // But only include nodes that are already present or are connected to present nodes
-  const presentNames = nodes.map(n=>n.name.toLowerCase());
-  // ensure all connections between friend nodes are considered when drawing lines
-  // Draw lines first
-  state.connections.forEach(c=>{
-    const a = c.userA, b = c.userB;
-    const idxA = nodes.findIndex(n=>n.name.toLowerCase()===a.toLowerCase());
-    const idxB = nodes.findIndex(n=>n.name.toLowerCase()===b.toLowerCase());
-    if(idxA===-1 || idxB===-1) return;
-    const nA = nodes[idxA], nB = nodes[idxB];
-    // determine state: check types
-    const tA = c.typeA || null, tB = c.typeB || null;
-    // display rules:
-    // - if neither chosen: no line (we decided earlier default no line) BUT you asked for dashed when one chooses, grey when mismatch. When both none, no line.
-    // - if only one chosen => dashed
-    // - if both chosen and equal => color
-    // - if both chosen and different => grey
-    let draw = false, dashed=false, color = null;
-    if(tA && !tB){ draw = true; dashed = true; color = 'line-dashed'; }
-    else if(!tA && tB){ draw = true; dashed = true; color = 'line-dashed'; }
-    else if(tA && tB){
-      draw = true;
-      if(tA === tB){ color = relationColor(tA); dashed=false; }
-      else { color = 'grey'; dashed=false; }
-    } else { draw=false; }
-    if(!draw) return;
-    const ns = document.createElementNS('http://www.w3.org/2000/svg','line');
-    ns.setAttribute('x1', nA.x); ns.setAttribute('y1', nA.y);
-    ns.setAttribute('x2', nB.x); ns.setAttribute('y2', nB.y);
-    ns.setAttribute('stroke-width', 3);
-    if(dashed){
-      ns.setAttribute('stroke-dasharray','8 6');
-      ns.setAttribute('stroke','#9b9b9b');
+  // cached data
+  let usersCache = []; // [{id, name, class, passHash}]
+  let requestsCache = []; // firestore docs
+  let relationshipsCache = []; // { id, userA, userB, typeA, typeB, lastChangedA, lastChangedB }
+  let messagesCache = []; // not used for map but for chat
+  let notificationsCache = [];
+
+  // relation types and colors
+  const RELATIONS = {
+    'Friends': getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#70c6ff',
+    'Close Friends': getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#6ee07a',
+    'Best Friends': getComputedStyle(document.documentElement).getPropertyValue('--yellow').trim() || '#ffd24d',
+    'Crush': getComputedStyle(document.documentElement).getPropertyValue('--pink').trim() || '#ff90d0',
+    'Hate': getComputedStyle(document.documentElement).getPropertyValue('--red').trim() || '#ff6b6b',
+    'Classmate': getComputedStyle(document.documentElement).getPropertyValue('--whiteRel').trim() || '#ffffff'
+  };
+
+  // ---------- Helpers for Firestore reads/writes ----------
+  async function loadAllUsers(){
+    const snap = await getDocs(collection(db,'users'));
+    usersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+  async function loadAllRequests(){
+    const snap = await getDocs(collection(db,'requests'));
+    requestsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+  async function loadAllRelationships(){
+    const snap = await getDocs(collection(db,'relationships'));
+    relationshipsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+  async function loadAllMessages(){
+    const snap = await getDocs(collection(db,'messages'));
+    messagesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+  async function loadAllNotifications(){
+    const snap = await getDocs(collection(db,'notifications'));
+    notificationsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+
+  // deterministic relationship document id
+  function relDocId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__').replace(/\s+/g,'_'); }
+
+  // create user doc (if not exist)
+  async function createUserIfNotExist(name, klass, passwordHash){
+    // find by name (case-insensitive)
+    await loadAllUsers();
+    const exists = usersCache.find(u => u.name.toLowerCase() === name.toLowerCase());
+    if(!exists){
+      const docRef = await addDoc(collection(db,'users'), { name, class: klass, passHash: passwordHash });
+      await loadAllUsers();
+      return docRef;
     } else {
-      if(color==='grey') ns.setAttribute('stroke','#9b9b9b');
-      else ns.setAttribute('stroke', color);
+      // if exists but missing passHash and we have passwordHash, set it
+      if(passwordHash && !exists.passHash){
+        await updateDoc(doc(db,'users', exists.id), { passHash: passwordHash });
+        await loadAllUsers();
+      }
+      return exists;
     }
-    svgMap.appendChild(ns);
-  });
-
-  // draw nodes
-  nodes.forEach(node=>{
-    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-    g.setAttribute('transform', `translate(${node.x},${node.y})`);
-    g.setAttribute('data-name', node.name);
-    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    circle.setAttribute('r', node.r);
-    circle.setAttribute('fill', node.isCenter ? '#cfa0ff' : '#70c6ff');
-    circle.setAttribute('stroke','#fff'); circle.setAttribute('stroke-width', node.isCenter?2:1);
-    circle.style.cursor = 'pointer';
-    g.appendChild(circle);
-    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
-    t.setAttribute('y', node.isCenter ? 6 : 4);
-    t.setAttribute('text-anchor','middle');
-    t.setAttribute('font-size', node.isCenter?14:11);
-    t.setAttribute('fill','#111');
-    t.textContent = node.name;
-    g.appendChild(t);
-
-    // hover
-    g.addEventListener('mouseenter', (ev)=>{
-      const nm = node.name;
-      const user = findUserByName(nm) || {};
-      const rel = myRelationTo(nm);
-      tooltip.style.display='block';
-      tooltip.innerHTML = `<strong>${nm}</strong> &middot; Class ${user.class||'–'}<br><span class="small">${rel?('You set: '+rel):'Relation not set'}</span>`;
-      positionTooltip(ev);
-    });
-    g.addEventListener('mousemove', positionTooltip);
-    g.addEventListener('mouseleave', ()=> tooltip.style.display='none');
-
-    // click -> profile
-    g.addEventListener('click', ()=> openProfile(node.name));
-
-    svgMap.appendChild(g);
-  });
-
-  function positionTooltip(ev){
-    const rect = document.getElementById('mapArea').getBoundingClientRect();
-    tooltip.style.left = (ev.clientX - rect.left) + 'px';
-    tooltip.style.top = (ev.clientY - rect.top - 12) + 'px';
-  }
-}
-
-/* ---- relation color map ---- */
-function relationColor(type){
-  if(!type) return '#9b9b9b';
-  const t = type.toLowerCase();
-  if(t==='friends' || t==='friend') return getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#70c6ff';
-  if(t==='close friends' || t==='close') return getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#6ee07a';
-  if(t==='best friends' || t==='best') return getComputedStyle(document.documentElement).getPropertyValue('--yellow').trim() || '#ffd24d';
-  if(t==='crush') return getComputedStyle(document.documentElement).getPropertyValue('--pink').trim() || '#ff90d0';
-  if(t==='hate' || t==='enemies') return getComputedStyle(document.documentElement).getPropertyValue('--red').trim() || '#ff6b6b';
-  if(t==='classmate') return getComputedStyle(document.documentElement).getPropertyValue('--whiteRel').trim() || '#ffffff';
-  return '#9b9b9b';
-}
-
-/* ---------- Profile overlay & actions ---------- */
-function openProfile(name){
-  profileDiv.style.display='block';
-  profileDiv.innerHTML = '';
-  profileDiv.style.minWidth='320px';
-  const user = findUserByName(name) || {class:'–'};
-  const title = document.createElement('div'); title.innerHTML = `<h3 style="margin:0">${name}</h3>`;
-  const info = document.createElement('div'); info.className='infoSmall'; info.innerHTML = `Class ${user.class||'–'}`;
-  profileDiv.appendChild(title); profileDiv.appendChild(info);
-
-  // show friend count
-  const fc = document.createElement('div'); fc.className='infoSmall'; fc.style.marginTop='8px';
-  fc.textContent = `Connections: ${computeConnectionCount(name)}`;
-  profileDiv.appendChild(fc);
-
-  // relation control (if currentUser exists and not the same)
-  if(currentUser && currentUser.name.toLowerCase() !== name.toLowerCase()){
-    const relLabel = document.createElement('div'); relLabel.style.marginTop='10px'; relLabel.textContent = 'Set your relation to this person (one change / 7 days):';
-    const sel = document.createElement('select'); sel.className='relSelect';
-    ['', 'Friends','Close Friends','Best Friends','Crush','Hate','Classmate'].forEach(v=>{
-      const o=document.createElement('option'); o.value=v; o.textContent = v?v:'Select relation'; sel.appendChild(o);
-    });
-    // preselect if currentUser already set
-    const existing = getMyRelationTo(name);
-    if(existing) sel.value = existing;
-    profileDiv.appendChild(relLabel); profileDiv.appendChild(sel);
-
-    const saveBtn = document.createElement('button'); saveBtn.textContent = 'Save relation'; saveBtn.style.marginTop='8px';
-    saveBtn.onclick = ()=>{
-      const chosen = sel.value;
-      if(!chosen){ alert('Choose relation'); return; }
-      // enforce one-change-per-7-days
-      const connId = connectionId(currentUser.name, name);
-      const conn = state.connections.find(c=>c.id===connId);
-      const now = Date.now();
-      if(conn){
-        // determine who is A/B
-        const isA = (conn.userA.toLowerCase() === currentUser.name.toLowerCase());
-        const last = isA ? conn.lastChangedA : conn.lastChangedB;
-        if(last && (now - last) < 7*24*3600*1000){
-          alert('You can change relation only once per 7 days.');
-          return;
-        }
-      } else {
-        alert('You must accept connection first.');
-        return;
-      }
-      // set relation
-      if(conn){
-        if(conn.userA.toLowerCase()===currentUser.name.toLowerCase()){
-          conn.typeA = chosen;
-          conn.lastChangedA = now;
-        } else {
-          conn.typeB = chosen;
-          conn.lastChangedB = now;
-        }
-        saveState(state);
-        // notify other user that someone updated their connection status
-        const other = (conn.userA.toLowerCase()===currentUser.name.toLowerCase()) ? conn.userB : conn.userA;
-        addNotification(other, `${currentUser.name} updated your connection status — choose your view.`);
-        renderUsersList(); renderMap(); renderNotifications();
-        alert('Relation saved.');
-      }
-    };
-    profileDiv.appendChild(saveBtn);
-  } else {
-    const selfNote = document.createElement('div'); selfNote.className='infoSmall'; selfNote.style.marginTop='12px'; selfNote.textContent = 'This is you.';
-    profileDiv.appendChild(selfNote);
   }
 
-  // Chat area if connected
-  if(currentUser && areConnected(currentUser.name, name)){
-    const chatWrap = document.createElement('div'); chatWrap.className='chatBox'; chatWrap.style.marginTop='12px';
-    chatWrap.innerHTML = `<div style="font-weight:700">Chat with ${name}</div><div id="chatMessages" class="chatMessages"></div>`;
-    const inpt = document.createElement('input'); inpt.placeholder='Type a message';
-    const sendBtn = document.createElement('button'); sendBtn.textContent='Send'; sendBtn.style.marginLeft='6px';
-    sendBtn.onclick = ()=> {
-      const text = inpt.value.trim();
-      if(!text) return;
-      const chatId = messagesChatId(currentUser.name, name);
-      state.messages.push({ chatId, from: currentUser.name, to: name, text, time: Date.now() });
-      saveState(state); inpt.value=''; renderChatMessages(chatId);
-    };
-    chatWrap.appendChild(inpt); chatWrap.appendChild(sendBtn);
-    profileDiv.appendChild(chatWrap);
-    renderChatMessages(messagesChatId(currentUser.name, name));
-    // quick phrases
-    document.querySelectorAll('.actionSmall[data-phrase]').forEach(b=>{
-      b.onclick = ()=> {
-        const p = b.getAttribute('data-phrase');
-        state.messages.push({ chatId: messagesChatId(currentUser.name, name), from: currentUser.name, to: name, text: p, time: Date.now() });
-        saveState(state); renderChatMessages(messagesChatId(currentUser.name, name));
+  // find user doc by name
+  async function findUserDocByName(name){
+    await loadAllUsers();
+    return usersCache.find(u => u.name.toLowerCase() === name.toLowerCase()) || null;
+  }
+
+  // ---------- Login flow (username+password quick auth) ----------
+  btnEnter.addEventListener('click', async ()=>{
+    const name = loginName.value.trim();
+    const pass = loginPass.value;
+    const klass = loginClass.value;
+    if(!name || !pass || !klass) return alert('Enter name, password and class');
+
+    const passHash = await sha256(pass);
+
+    // check if user exists
+    const existing = await findUserDocByName(name);
+    if(existing){
+      // validate password
+      if(existing.passHash && existing.passHash !== passHash){
+        return alert('Wrong password for this username.');
+      }
+      // logged in
+      currentUser = { name: existing.name, class: existing.class || klass, uid: existing.id };
+      localStorage.setItem('relate_current', JSON.stringify(currentUser));
+      // if class changed, update
+      if(existing.class !== klass){
+        await updateDoc(doc(db,'users', existing.id), { class: klass });
+      }
+      await postLoginInit();
+      alert('Welcome back, ' + existing.name);
+    } else {
+      // create new user
+      const r = await addDoc(collection(db,'users'), { name, class: klass, passHash });
+      currentUser = { name, class: klass, uid: r.id };
+      localStorage.setItem('relate_current', JSON.stringify(currentUser));
+      await postLoginInit();
+      alert('Account created. Welcome ' + name);
+    }
+  });
+
+  btnLogout.addEventListener('click', ()=>{
+    localStorage.removeItem('relate_current');
+    currentUser = null;
+    window.location.reload();
+  });
+
+  async function postLoginInit(){
+    who.textContent = `${currentUser.name} (Class ${currentUser.class})`;
+    btnLogout.style.display = 'inline-block';
+    document.getElementById('loginPanel').style.display = 'none';
+    // load data
+    await Promise.all([loadAllUsers(), loadAllRequests(), loadAllRelationships(), loadAllMessages(), loadAllNotifications()]);
+    renderUsers();
+    renderSuggestions();
+    updateReqBadge();
+    drawMap();
+  }
+
+  // auto-login if saved
+  (async function init(){
+    if(currentUser){
+      await postLoginInit();
+    } else {
+      // show login panel
+      document.getElementById('loginPanel').style.display = 'block';
+    }
+  })();
+
+  // ---------- Rendering sidebar users ----------
+  function renderUsers(){
+    usersList.innerHTML = '';
+    const others = usersCache.filter(u => u.name.toLowerCase() !== (currentUser?currentUser.name.toLowerCase():''));
+    others.sort((a,b)=>a.name.localeCompare(b.name));
+    others.forEach(u=>{
+      const row = document.createElement('div'); row.className='userRow';
+      const left = document.createElement('div');
+      left.innerHTML = `<div style="font-weight:700">${u.name}</div><div class="small">Class ${u.class||'–'}</div>`;
+      const right = document.createElement('div');
+      // check request sent or connected
+      const sent = requestsCache.some(r=>r.from.toLowerCase()=== (currentUser?currentUser.name.toLowerCase():'') && r.to.toLowerCase()===u.name.toLowerCase());
+      const connected = relationshipsCache.some(r=> (r.userA.toLowerCase()===u.name.toLowerCase() && r.userB.toLowerCase()===currentUser.name.toLowerCase()) || (r.userB.toLowerCase()===u.name.toLowerCase() && r.userA.toLowerCase()===currentUser.name.toLowerCase()) );
+      const btn = document.createElement('button');
+      if(connected){ btn.textContent = 'Connected'; btn.disabled=true; }
+      else if(sent){ btn.textContent='Sent ✓'; btn.disabled=true; }
+      else { btn.textContent='+'; btn.disabled = !currentUser; }
+      btn.onclick = async ()=>{
+        if(!currentUser) return alert('Login first');
+        // send request doc
+        await addDoc(collection(db,'requests'), { from: currentUser.name, to: u.name, status: 'pending', time: Date.now() });
+        await loadAllRequests();
+        renderUsers(); updateReqBadge();
+        alert(`✅ Request sent to ${u.name}`);
       };
+      right.appendChild(btn);
+      row.appendChild(left); row.appendChild(right);
+      usersList.appendChild(row);
     });
   }
 
-  const close = document.createElement('button'); close.textContent='Close'; close.style.marginTop='12px'; close.style.marginLeft='8px';
-  close.onclick = ()=> { profileDiv.style.display='none'; };
-  profileDiv.appendChild(close);
-}
-
-function renderChatMessages(chatId){
-  const wrap = document.getElementById('chatMessages');
-  if(!wrap) return;
-  wrap.innerHTML = '';
-  const msgs = state.messages.filter(m=>m.chatId===chatId).sort((a,b)=>a.time-b.time);
-  msgs.forEach(m=>{
-    const div = document.createElement('div'); div.className = 'msg ' + (m.from.toLowerCase()===currentUser.name.toLowerCase() ? 'you':'them');
-    div.textContent = `${m.from}: ${m.text}`;
-    wrap.appendChild(div);
-  });
-}
-
-/* ---------- Requests UI ---------- */
-function showRequestsPanel(){
-  // build panel in tooltip area (temporary)
-  const panel = document.createElement('div'); panel.className='requestsBox';
-  panel.innerHTML = '<strong>Incoming Requests</strong>';
-  const incoming = state.requests.filter(r => currentUser && r.to.toLowerCase() === currentUser.name.toLowerCase());
-  if(incoming.length===0) panel.innerHTML += '<div class="smallMuted">No pending requests</div>';
-  incoming.forEach(req=>{
-    const ri = document.createElement('div'); ri.className='requestItem';
-    const left = document.createElement('div'); left.innerHTML = `<div style="font-weight:700">${req.from}</div><div class="small">sent ${new Date(req.time).toLocaleString()}</div>`;
-    const right = document.createElement('div');
-    const acc = document.createElement('button'); acc.textContent='Accept'; acc.onclick = ()=>{
-      acceptRequest(req);
-      document.body.removeChild(panelWrap);
-    };
-    const dec = document.createElement('button'); dec.textContent='Decline'; dec.style.marginLeft='6px'; dec.onclick = ()=>{ declineRequest(req); document.body.removeChild(panelWrap); };
-    right.appendChild(acc); right.appendChild(dec);
-    ri.appendChild(left); ri.appendChild(right);
-    panel.appendChild(ri);
-  });
-  // overlay panel
-  const panelWrap = document.createElement('div');
-  panelWrap.style.position='fixed'; panelWrap.style.right='20px'; panelWrap.style.top='70px'; panelWrap.style.zIndex=9999;
-  panelWrap.appendChild(panel);
-  document.body.appendChild(panelWrap);
-}
-
-/* ---------- Request handling ---------- */
-function acceptRequest(req){
-  // add connection doc (deterministic id)
-  const id = connectionId(req.from, req.to);
-  const exist = state.connections.find(c=>c.id===id);
-  if(!exist){
-    state.connections.push({ id, userA: req.from, userB: req.to, typeA: null, typeB: null, lastChangedA:null, lastChangedB:null });
+  // ---------- Suggestions (You might know) ----------
+  function renderSuggestions(){
+    suggestionsDiv.innerHTML = '';
+    // compute mutual counts for each pair relative to currentUser
+    if(!currentUser) return;
+    // build adjacency via relationshipsCache where accepted connections exist (t.typeA==='accepted' not used — we treat connections as created on accept)
+    // For simplicity, treat any relationship doc as connection (we accept requests create relationship doc)
+    // We'll compute mutuals based on relationshipsCache where both parties are connected to someone in common
+    const myConnections = relationshipsCache.filter(r => (r.userA.toLowerCase()===currentUser.name.toLowerCase() || r.userB.toLowerCase()===currentUser.name.toLowerCase())).map(r => (r.userA.toLowerCase()===currentUser.name.toLowerCase()? r.userB : r.userA));
+    const suggestions = [];
+    usersCache.forEach(u=>{
+      if(u.name.toLowerCase()===currentUser.name.toLowerCase()) return;
+      if(myConnections.includes(u.name)) return; // already connected
+      // count mutuals: how many of myConnections are connected to u
+      let mutual = 0;
+      myConnections.forEach(m=>{
+        const has = relationshipsCache.some(r => ((r.userA.toLowerCase()===m.toLowerCase() && r.userB.toLowerCase()===u.name.toLowerCase()) || (r.userB.toLowerCase()===m.toLowerCase() && r.userA.toLowerCase()===u.name.toLowerCase())));
+        if(has) mutual++;
+      });
+      if(mutual >= 3) suggestions.push({ user:u, mutual });
+    });
+    // show suggestions
+    suggestions.forEach(s=>{
+      const d = document.createElement('div'); d.className='userRow';
+      d.innerHTML = `<div><div style="font-weight:700">${s.user.name}</div><div class="small">Class ${s.user.class||'–'} • ${s.mutual} mutuals</div></div>`;
+      const right = document.createElement('div');
+      const addBtn = document.createElement('button'); addBtn.textContent='+';
+      addBtn.onclick = async ()=> {
+        // send request
+        await addDoc(collection(db,'requests'), { from: currentUser.name, to: s.user.name, status:'pending', time: Date.now() });
+        await loadAllRequests(); renderUsers(); updateReqBadge(); alert(`Request sent to ${s.user.name}`);
+        renderSuggestions();
+      };
+      const xBtn = document.createElement('button'); xBtn.textContent='×'; xBtn.style.marginLeft='6px';
+      xBtn.onclick = ()=> { d.style.display='none'; }; // dismissed until refresh
+      right.appendChild(addBtn); right.appendChild(xBtn);
+      d.appendChild(right);
+      suggestionsDiv.appendChild(d);
+    });
+    if(suggestions.length===0) suggestionsDiv.innerHTML = '<div class="smallMuted">No suggestions for now.</div>';
   }
-  // remove request
-  state.requests = state.requests.filter(r => !(r.from===req.from && r.to===req.to));
-  // send notification to requester
-  addNotification(req.from, `${req.to} accepted your connection.`);
-  saveState(state); renderUsersList(); updatePendingCount(); renderMap();
-}
 
-function declineRequest(req){
-  // remove request and remove sent tick for sender (tick is derived from requests so will disappear)
-  state.requests = state.requests.filter(r => !(r.from===req.from && r.to===req.to));
-  saveState(state); renderUsersList(); updatePendingCount(); renderMap();
-}
+  // ---------- Requests UI ----------
+  tabRequests.addEventListener('click', ()=> { showTab('requests'); renderRequests(); });
+  async function renderRequests(){
+    await loadAllRequests();
+    requestsBox.innerHTML = '<strong>Incoming Requests</strong>';
+    if(!currentUser) { requestsBox.innerHTML += '<div class="smallMuted">Login to see requests</div>'; return; }
+    const incoming = requestsCache.filter(r=> r.to.toLowerCase() === currentUser.name.toLowerCase() && r.status === 'pending');
+    if(incoming.length===0) requestsBox.innerHTML += '<div class="smallMuted">No pending requests</div>';
+    incoming.forEach(r=>{
+      const div = document.createElement('div'); div.className='requestItem';
+      div.innerHTML = `<div><div style="font-weight:700">${r.from}</div><div class="small">sent ${(new Date(r.time)).toLocaleString()}</div></div>`;
+      const right = document.createElement('div');
+      const acc = document.createElement('button'); acc.textContent='Accept';
+      acc.onclick = async ()=>{
+        // Accept: create relationship doc (deterministic id)
+        const id = relDocId(r.from, r.to);
+        // create or update relationships doc
+        const ref = doc(db,'relationships', id);
+        const snap = await getDoc(ref);
+        if(!snap.exists()){
+          await setDoc(ref, { userA: r.from, userB: r.to, typeA: null, typeB: null, lastChangedA: null, lastChangedB: null });
+        }
+        // mark request removed (update status)
+        await updateDoc(doc(db,'requests', r.id), { status: 'accepted' });
+        // send notification to requester
+        await addDoc(collection(db,'notifications'), { to: r.from, text: `${r.to} accepted your connection.`, time: Date.now(), seen: false });
+        await loadAllRelationships(); await loadAllRequests(); renderUsers(); renderRequests(); updateReqBadge(); drawMap(); alert('Connection accepted');
+      };
+      const dec = document.createElement('button'); dec.textContent='Decline'; dec.style.marginLeft='6px';
+      dec.onclick = async ()=>{
+        await updateDoc(doc(db,'requests', r.id), { status: 'rejected' });
+        await loadAllRequests(); renderUsers(); renderRequests(); updateReqBadge(); alert('Request declined');
+      };
+      right.appendChild(acc); right.appendChild(dec);
+      div.appendChild(right); requestsBox.appendChild(div);
+    });
+  }
 
-/* ---------- connections helpers ---------- */
-function computeConnectionCount(name){
-  let count=0;
-  state.connections.forEach(c=>{
-    if(c.userA.toLowerCase()===name.toLowerCase() || c.userB.toLowerCase()===name.toLowerCase()){
-      count++;
+  // request badge count
+  async function updateReqBadge(){
+    await loadAllRequests();
+    const count = requestsCache.filter(r => r.to.toLowerCase() === (currentUser?currentUser.name.toLowerCase():'') && r.status === 'pending').length;
+    reqBadge.textContent = String(count);
+  }
+
+  // ---------- Map & Relationships ----------
+  tabMap.addEventListener('click', ()=> { showTab('map'); drawMap(); });
+
+  async function drawMap(){
+    // reload caches to reflect latest
+    await Promise.all([loadAllUsers(), loadAllRelationships(), loadAllRequests()]);
+    mapSvg.innerHTML = '';
+    tooltip.style.display='none'; overlay.style.display='none';
+    if(!currentUser) return;
+
+    // center
+    const centerX = 500, centerY = 350;
+    const centerNode = { name: currentUser.name, x:centerX, y:centerY, r:30, isCenter:true };
+    // direct connections: relationships where either userA or userB equals currentUser
+    const direct = [];
+    relationshipsCache.forEach(r => {
+      if(r.userA && r.userB){
+        if(r.userA.toLowerCase() === currentUser.name.toLowerCase()) direct.push(r.userB);
+        else if(r.userB.toLowerCase() === currentUser.name.toLowerCase()) direct.push(r.userA);
+      }
+    });
+    const uniqueDirect = Array.from(new Set(direct));
+    // create friend nodes around circle
+    const nodes = [centerNode];
+    const count = uniqueDirect.length;
+    const radius = Math.min(280, 90 + count*30);
+    uniqueDirect.forEach((nm,i)=>{
+      const angle = (i / Math.max(1,count)) * Math.PI * 2 - Math.PI/2;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      nodes.push({ name: nm, x, y, r:20 });
+    });
+
+    // helper find node
+    const findNode = name => nodes.find(n => n.name.toLowerCase() === name.toLowerCase());
+
+    // draw relationship lines for any pair existing among nodes (including connections between friend nodes)
+    relationshipsCache.forEach(r => {
+      if(!r.userA || !r.userB) return;
+      const nA = findNode(r.userA), nB = findNode(r.userB);
+      if(!nA || !nB) return; // skip relationships outside visual scope
+      // determine display
+      const tA = r.typeA || null, tB = r.typeB || null;
+      let draw=false, dashed=false, color=null;
+      if(tA && tB){
+        draw = true;
+        if(tA === tB){ color = RELATIONS[tA] || '#9b9b9b'; dashed=false; }
+        else { color = '#9b9b9b'; dashed=false; } // mismatch
+      } else if(tA || tB){
+        draw = true; dashed = true; color = '#9b9b9b';
+      } else {
+        draw = false; // no line until someone picks
+      }
+      if(!draw) return;
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', nA.x); line.setAttribute('y1', nA.y);
+      line.setAttribute('x2', nB.x); line.setAttribute('y2', nB.y);
+      line.setAttribute('stroke-width', 3);
+      if(dashed){ line.setAttribute('stroke-dasharray','8 6'); line.setAttribute('stroke', color); }
+      else { line.setAttribute('stroke', color); }
+      mapSvg.appendChild(line);
+    });
+
+    // draw nodes
+    nodes.forEach(node=>{
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform', `translate(${node.x},${node.y})`);
+      g.setAttribute('data-name', node.name);
+      // circle
+      const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      circle.setAttribute('r', node.r);
+      circle.setAttribute('fill', node.isCenter ? '#cfa0ff' : '#70c6ff');
+      circle.setAttribute('stroke','#fff'); circle.setAttribute('stroke-width', node.isCenter?2:1);
+      circle.style.cursor = 'pointer';
+      g.appendChild(circle);
+      // label
+      const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+      text.setAttribute('y', node.isCenter ? 6 : 4);
+      text.setAttribute('text-anchor','middle');
+      text.setAttribute('font-size', node.isCenter?14:11);
+      text.setAttribute('fill','#111');
+      text.textContent = node.name;
+      g.appendChild(text);
+
+      // hover
+      g.addEventListener('mouseenter', async (ev)=>{
+        const nm = node.name;
+        const user = usersCache.find(u => u.name.toLowerCase()===nm.toLowerCase()) || {};
+        const myRel = getMyRelationTo(nm);
+        tooltip.style.display='block';
+        tooltip.innerHTML = `<strong>${nm}</strong> • Class ${user.class || '–'}<br><span class="small">${myRel?('You set: '+myRel):'No relation set'}</span>`;
+        positionTooltip(ev);
+      });
+      g.addEventListener('mousemove', positionTooltip);
+      g.addEventListener('mouseleave', ()=> tooltip.style.display='none');
+
+      // click -> profile overlay
+      g.addEventListener('click', ()=> openProfile(node.name));
+      mapSvg.appendChild(g);
+    });
+
+    function positionTooltip(ev){
+      const rect = mapSvg.getBoundingClientRect();
+      tooltip.style.left = (ev.clientX - rect.left) + 'px';
+      tooltip.style.top = (ev.clientY - rect.top - 12) + 'px';
     }
-  });
-  return count;
-}
-
-function areConnected(a,b){
-  const id = connectionId(a,b);
-  return state.connections.some(c=>c.id===id);
-}
-
-function getMyRelationTo(other){
-  const id = connectionId(currentUser.name, other);
-  const conn = state.connections.find(c=>c.id===id);
-  if(!conn) return null;
-  if(conn.userA.toLowerCase()===currentUser.name.toLowerCase()) return conn.typeA || null;
-  return conn.typeB || null;
-}
-
-function myRelationTo(other){
-  if(!currentUser) return null;
-  return getMyRelationTo(other);
-}
-
-/* ---------- Notifications ---------- */
-function renderNotifications(){
-  // small badge already handled by pending count
-  // Optionally add a UI to view notifications - not required for now
-}
-
-/* ---------- Export / Import ---------- */
-exportBtn.onclick = ()=>{
-  const t = JSON.stringify(state);
-  navigator.clipboard && navigator.clipboard.writeText(t).then(()=>alert('State copied. Paste into other browser with "Paste state".'));
-};
-importBtn.onclick = ()=>{
-  try{
-    const txt = stateArea.value.trim();
-    if(!txt) return alert('Paste exported state into the textarea first.');
-    const incoming = JSON.parse(txt);
-    // merge: simple replace (overwrite)
-    state = incoming;
-    saveState(state);
-    alert('State imported. Click Refresh to reload UI.');
-  }catch(e){ alert('Bad JSON'); }
-};
-refreshBtn.onclick = ()=>{
-  state = loadState();
-  currentUser = JSON.parse(localStorage.getItem('relate_current')) || null;
-  updateUIAfterRefresh();
-};
-
-/* ---------- Accept/Decline helpers for external test ---------- */
-async function updateUIAfterRefresh(){
-  renderUsersList();
-  await updatePendingCount();
-  renderMap();
-  if(currentUser){ logged.textContent = `${currentUser.name} (Class ${currentUser.class})`; logoutBtn.style.display='inline-block'; }
-  else { logged.textContent='—'; logoutBtn.style.display='none'; }
-}
-
-/* ---------- Accept Request invoked via notification buttons ---------- */
-function connectionId(a,b){
-  return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__');
-}
-
-/* ---------- Messages quick phrase buttons ---------- */
-document.querySelectorAll('.actionSmall[data-phrase]').forEach(b=>{
-  b.addEventListener('click', ()=>{
-    // if profile overlay open and chat present, send; else no-op
-    const pd = profileDiv.style.display;
-    if(pd!=='block') return alert('Open a profile (click a connected user) to send quick phrase.');
-    const chatInput = profileDiv.querySelector('input');
-    const nameTitle = profileDiv.querySelector('h3').textContent;
-    if(!chatInput || !currentUser) return;
-    const phrase = b.getAttribute('data-phrase');
-    const chatId = messagesChatId(currentUser.name, nameTitle);
-    state.messages.push({ chatId, from: currentUser.name, to: nameTitle, text: phrase, time: Date.now() });
-    saveState(state);
-    renderChatMessages(chatId);
-  });
-});
-
-/* ---------- Enter / Logout ---------- */
-enterBtn.onclick = async ()=>{
-  const name = nameInput.value.trim();
-  const klass = classSelect.value;
-  if(!name || !klass) return alert('Enter name and class');
-  // add user if needed
-  if(!findUserByName(name)){
-    state.users.push({ name, class: klass });
-    saveState(state);
-  } else {
-    // update class if changed
-    const u = findUserByName(name);
-    if(u.class !== klass){ u.class = klass; saveState(state); }
   }
-  currentUser = { name, class: klass };
-  localStorage.setItem('relate_current', JSON.stringify(currentUser));
-  updateUIAfterRefresh();
-  renderNotifications();
-  alert('Welcome ' + name);
-};
 
-logoutBtn.onclick = ()=>{ localStorage.removeItem('relate_current'); currentUser = null; updateUIAfterRefresh(); };
+  // ---------- Profile overlay ----------
+  function openProfile(name){
+    overlay.style.display = 'block';
+    overlay.innerHTML = '';
+    const user = usersCache.find(u => u.name.toLowerCase()===name.toLowerCase()) || { class:'–' };
+    const title = document.createElement('div'); title.innerHTML = `<h3 style="margin:0">${name}</h3>`;
+    overlay.appendChild(title);
+    const info = document.createElement('div'); info.className='smallMuted'; info.textContent = `Class ${user.class || '–'}`; overlay.appendChild(info);
+    // connections count
+    const count = relationshipsCache.filter(r => (r.userA && r.userB) && (r.userA.toLowerCase()===name.toLowerCase() || r.userB.toLowerCase()===name.toLowerCase())).length;
+    const cc = document.createElement('div'); cc.className='smallMuted'; cc.style.marginTop='8px'; cc.textContent = `${count} connection${count!==1?'s':''}`; overlay.appendChild(cc);
 
-/* ---------- Show requests button ---------- */
-showRequestsBtn.onclick = ()=> showRequestsPanel();
+    // show relation setter if not self and connection exists
+    if(currentUser && currentUser.name.toLowerCase() !== name.toLowerCase()){
+      // ensure connection exists
+      const rid = relDocId(currentUser.name, name);
+      const relDoc = relationshipsCache.find(r => r.id === rid);
+      const isConnected = !!relDoc;
+      if(isConnected){
+        const relWrap = document.createElement('div'); relWrap.style.marginTop='12px';
+        const label = document.createElement('div'); label.textContent = 'Set your relation to this person (change once / 7 days)';
+        relWrap.appendChild(label);
+        const sel = document.createElement('select'); sel.className='relSelect';
+        sel.innerHTML = `<option value="">Choose relation</option>`;
+        Object.keys(RELATIONS).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); });
+        // preselect if currentUser already set
+        const existing = getMyRelationTo(name);
+        if(existing) sel.value = existing;
+        relWrap.appendChild(sel);
+        const saveBtn = document.createElement('button'); saveBtn.textContent='Save relation'; saveBtn.style.marginTop='8px';
+        saveBtn.onclick = async ()=>{
+          const chosen = sel.value;
+          if(!chosen) return alert('Pick a relation');
+          // enforce 7-day cooldown
+          const conn = relationshipsCache.find(r=>r.id===rid);
+          const now = Date.now();
+          if(conn){
+            const isA = conn.userA.toLowerCase() === currentUser.name.toLowerCase();
+            const last = isA ? conn.lastChangedA : conn.lastChangedB;
+            if(last && (now - last < 7*24*3600*1000)) return alert('You can change relation only once per 7 days.');
+          }
+          // update doc: set typeA or typeB accordingly
+          const ref = doc(db,'relationships',rid);
+          const snapshot = await getDoc(ref);
+          if(!snapshot.exists()){
+            // shouldn't happen: create base doc
+            await setDoc(ref, { userA: currentUser.name, userB: name, typeA: null, typeB: null, lastChangedA: null, lastChangedB: null });
+          }
+          const data = (await getDoc(ref)).data();
+          // decide slot
+          if(data.userA.toLowerCase() === currentUser.name.toLowerCase()){
+            await updateDoc(ref, { typeA: chosen, lastChangedA: Date.now() });
+          } else if(data.userB.toLowerCase() === currentUser.name.toLowerCase()){
+            await updateDoc(ref, { typeB: chosen, lastChangedB: Date.now() });
+          } else {
+            // fallback, set A
+            await updateDoc(ref, { typeA: chosen, lastChangedA: Date.now() });
+          }
+          // add notification to other user prompting them to set their relation
+          await addDoc(collection(db,'notifications'), { to: name, text: `${currentUser.name} updated your connection status — pick your view.`, time: Date.now(), seen:false });
+          // refresh caches & UI
+          await loadAllRelationships(); drawMap(); updateReqBadge(); alert('Relation saved. Other user has been notified.');
+          overlay.style.display='none';
+        };
+        relWrap.appendChild(saveBtn);
+        overlay.appendChild(relWrap);
+      } else {
+        const notConn = document.createElement('div'); notConn.className='smallMuted'; notConn.style.marginTop='12px'; notConn.textContent = 'You are not connected with this user.';
+        overlay.appendChild(notConn);
+      }
+    }
 
-/* ---------- Initial render ---------- */
-updateUIAfterRefresh();
+    // Chat panel if connected
+    if(currentUser && areConnected(currentUser.name, name)){
+      const chatTitle = document.createElement('div'); chatTitle.style.marginTop='12px'; chatTitle.innerHTML = `<strong>Chat with ${name}</strong>`;
+      overlay.appendChild(chatTitle);
+      const chatWrap = document.createElement('div'); chatWrap.style.marginTop='8px';
+      const messagesDiv = document.createElement('div'); messagesDiv.style.maxHeight='160px'; messagesDiv.style.overflow='auto'; messagesDiv.style.background='#fff'; messagesDiv.style.color='#111'; messagesDiv.style.padding='8px'; messagesDiv.style.borderRadius='8px';
+      chatWrap.appendChild(messagesDiv);
+      const inputRow = document.createElement('div'); inputRow.style.display='flex'; inputRow.style.gap='6px'; inputRow.style.marginTop='8px';
+      const input = document.createElement('input'); input.placeholder='Type a message';
+      const send = document.createElement('button'); send.textContent='Send';
+      send.onclick = async ()=>{
+        const txt = input.value.trim(); if(!txt) return;
+        const chatId = messagesChatId(currentUser.name, name);
+        await addDoc(collection(db,'messages'), { chatId, from: currentUser.name, to: name, text: txt, time: Date.now() });
+        input.value='';
+        await loadAllMessages(); renderMessages(messagesDiv, chatId);
+      };
+      inputRow.appendChild(input); inputRow.appendChild(send);
+      overlay.appendChild(chatWrap); overlay.appendChild(inputRow);
+      // render existing
+      (async ()=> { await loadAllMessages(); renderMessages(messagesDiv, messagesChatId(currentUser.name, name)); })();
+    }
 
+    const close = document.createElement('button'); close.textContent='Close'; close.style.marginTop='12px'; close.onclick = ()=> overlay.style.display='none';
+    overlay.appendChild(close);
+  }
+
+  function messagesChatId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__'); }
+  function renderMessages(container, chatId){
+    container.innerHTML = '';
+    const msgs = messagesCache.filter(m => m.chatId === chatId).sort((a,b)=>a.time-b.time);
+    msgs.forEach(m=>{
+      const d = document.createElement('div'); d.style.margin='6px 0'; d.textContent = `${m.from}: ${m.text}`;
+      container.appendChild(d);
+    });
+  }
+
+  // ---------- Connections helpers ----------
+  function areConnected(a,b){
+    const id = relDocId(a,b);
+    return relationshipsCache.some(r => r.id === id);
+  }
+
+  function getMyRelationTo(other){
+    if(!currentUser) return null;
+    const id = relDocId(currentUser.name, other);
+    const docObj = relationshipsCache.find(r => r.id === id);
+    if(!docObj) return null;
+    if(docObj.userA.toLowerCase() === currentUser.name.toLowerCase()) return docObj.typeA || null;
+    if(docObj.userB.toLowerCase() === currentUser.name.toLowerCase()) return docObj.typeB || null;
+    return null;
+  }
+
+  // get relation to current user by other (private: we do not reveal other user's pick)
+  function getRelationOtherToCurrent(other){
+    const id = relDocId(currentUser.name, other);
+    const docObj = relationshipsCache.find(r => r.id === id);
+    if(!docObj) return null;
+    if(docObj.userA.toLowerCase() === other.toLowerCase()) return docObj.typeA || null;
+    if(docObj.userB.toLowerCase() === other.toLowerCase()) return docObj.typeB || null;
+    return null;
+  }
+
+  // ---------- Search ----------
+  tabSearch.addEventListener('click', ()=> showTab('search'));
+  searchBtn.addEventListener('click', async ()=>{
+    const q = searchInput.value.trim();
+    searchResult.innerHTML = '';
+    if(!q) return (searchResult.textContent = 'Enter a name to search.');
+    await loadAllUsers();
+    const found = usersCache.find(u => u.name.toLowerCase() === q.toLowerCase());
+    if(!found) return (searchResult.textContent = 'User not found.');
+    const div = document.createElement('div');
+    div.innerHTML = `<div style="font-weight:700">${found.name}</div><div class="small">Class ${found.class||'–'}</div>`;
+    const btn = document.createElement('button');
+    // check existing request/connection
+    const sent = requestsCache.some(r=>r.from.toLowerCase()===currentUser.name.toLowerCase() && r.to.toLowerCase()===found.name.toLowerCase());
+    const connected = relationshipsCache.some(r=> (r.userA.toLowerCase()===found.name.toLowerCase() && r.userB.toLowerCase()===currentUser.name.toLowerCase()) || (r.userB.toLowerCase()===found.name.toLowerCase() && r.userA.toLowerCase()===currentUser.name.toLowerCase()) );
+    if(connected){ btn.textContent='Connected'; btn.disabled=true; } else if(sent){ btn.textContent='Sent ✓'; btn.disabled=true; } else { btn.textContent='Send Request'; }
+    btn.onclick = async ()=>{
+      await addDoc(collection(db,'requests'), { from: currentUser.name, to: found.name, status:'pending', time: Date.now() });
+      await loadAllRequests(); renderUsers(); updateReqBadge(); alert('Request sent');
+    };
+    div.appendChild(btn); searchResult.appendChild(div);
+  });
+
+  // ---------- Connections tab rendering ----------
+  tabConnections.addEventListener('click', ()=> { showTab('connections'); renderConnections(); });
+  async function renderConnections(){
+    await loadAllRelationships();
+    connectionsList.innerHTML = '';
+    if(!currentUser) return;
+    const myConns = relationshipsCache.filter(r => r.userA.toLowerCase()===currentUser.name.toLowerCase() || r.userB.toLowerCase()===currentUser.name.toLowerCase());
+    if(myConns.length===0) connectionsList.innerHTML = '<div class="smallMuted">No connections yet.</div>';
+    myConns.forEach(c=>{
+      const other = c.userA.toLowerCase()===currentUser.name.toLowerCase() ? c.userB : c.userA;
+      const div = document.createElement('div'); div.className='friendItem';
+      div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div>${other}</div><div><button onclick="openProfileClient('${other.replace(/'/g,"\\'")}')">Profile</button></div></div>`;
+      connectionsList.appendChild(div);
+    });
+  }
+
+  // helper to call openProfile from inline onclick
+  window.openProfileClient = function(name){ openProfile(name); };
+
+  // ---------- Messages tab ----------
+  tabMessages.addEventListener('click', ()=> { showTab('messages'); renderMessagesTab(); });
+  async function renderMessagesTab(){
+    await loadAllMessages();
+    chatArea.innerHTML = '';
+    if(!currentUser) return chatArea.innerHTML = '<div class="smallMuted">Login to chat with connections.</div>';
+    // list connections with latest message preview
+    const myConns = relationshipsCache.filter(r => r.userA.toLowerCase()===currentUser.name.toLowerCase() || r.userB.toLowerCase()===currentUser.name.toLowerCase());
+    myConns.forEach(c=>{
+      const other = c.userA.toLowerCase()===currentUser.name.toLowerCase() ? c.userB : c.userA;
+      const chatId = messagesChatId(currentUser.name, other);
+      const msgs = messagesCache.filter(m => m.chatId === chatId).sort((a,b)=>b.time - a.time);
+      const last = msgs[0];
+      const div = document.createElement('div'); div.className='friendItem';
+      div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${other}</strong><div class="small">${ last ? (last.from + ': ' + last.text) : 'No messages yet' }</div></div><div><button onclick="openChatClient('${other.replace(/'/g,"\\'")}')">Open</button></div></div>`;
+      chatArea.appendChild(div);
+    });
+    if(myConns.length===0) chatArea.innerHTML = '<div class="smallMuted">No connections to message.</div>';
+  }
+
+  window.openChatClient = function(name){ openChat(name); };
+
+  async function openChat(name){
+    // show overlay with chat for this friend
+    overlay.style.display='block'; overlay.innerHTML='';
+    const title = document.createElement('div'); title.innerHTML = `<h3 style="margin:0">Chat with ${name}</h3>`; overlay.appendChild(title);
+    const messagesDiv = document.createElement('div'); messagesDiv.style.maxHeight='200px'; messagesDiv.style.overflow='auto'; messagesDiv.style.background='#fff'; messagesDiv.style.color='#111'; messagesDiv.style.padding='8px'; messagesDiv.style.borderRadius='8px'; messagesDiv.style.marginTop='8px';
+    overlay.appendChild(messagesDiv);
+    const inp = document.createElement('input'); inp.placeholder='Type a message'; inp.style.marginTop='8px';
+    const send = document.createElement('button'); send.textContent='Send'; send.style.marginLeft='6px';
+    send.onclick = async ()=>{
+      const t = inp.value.trim(); if(!t) return;
+      await addDoc(collection(db,'messages'), { chatId: messagesChatId(currentUser.name, name), from: currentUser.name, to: name, text: t, time: Date.now() });
+      inp.value=''; await loadAllMessages(); renderMessages(messagesDiv, messagesChatId(currentUser.name, name));
+    };
+    overlay.appendChild(inp); overlay.appendChild(send);
+    await loadAllMessages(); renderMessages(messagesDiv, messagesChatId(currentUser.name, name));
+    const close = document.createElement('button'); close.textContent='Close'; close.style.marginTop='10px'; close.onclick = ()=> overlay.style.display='none'; overlay.appendChild(close);
+  }
+
+  function renderMessages(container, chatId){ container.innerHTML = ''; const msgs = messagesCache.filter(m=>m.chatId===chatId).sort((a,b)=>a.time-b.time); msgs.forEach(m=>{ const d = document.createElement('div'); d.style.margin='6px 0'; d.style.padding='6px'; d.style.borderRadius='6px'; d.style.background = m.from===currentUser.name?'#dfeaff':'#ffeef2'; d.textContent = `${m.from}: ${m.text}`; container.appendChild(d); }); }
+
+  function sendQuickPhrase(p){ // if overlay open and chat present
+    // find current chat friend if overlay has h3 "Chat with NAME"
+    const h3 = overlay.querySelector('h3');
+    if(!h3) return alert('Open a chat first (click a connection -> Chat).');
+    const name = h3.textContent.replace('Chat with ','').trim();
+    openChat(name); // ensure chat is loaded - but send after
+    (async ()=>{ await addDoc(collection(db,'messages'), { chatId: messagesChatId(currentUser.name, name), from: currentUser.name, to: name, text: p, time: Date.now() }); await loadAllMessages(); })();
+  }
+
+  // ---------- Notifications small UI (reqBadge used) ----------
+  // showTab helper
+  function showTab(tab){
+    [contentRequests, contentMessages, contentMap, contentSearch, contentConnections].forEach(c=>c.style.display='none');
+    [tabRequests, tabMessages, tabMap, tabSearch, tabConnections].forEach(b=>b.classList.remove('activeTab'));
+    if(tab==='requests'){ contentRequests.style.display='block'; tabRequests.classList.add('activeTab'); renderRequests(); }
+    if(tab==='messages'){ contentMessages.style.display='block'; tabMessages.classList.add('activeTab'); renderMessagesTab(); }
+    if(tab==='map'){ contentMap.style.display='block'; tabMap.classList.add('activeTab'); drawMap(); }
+    if(tab==='search'){ contentSearch.style.display='block'; tabSearch.classList.add('activeTab'); }
+    if(tab==='connections'){ contentConnections.style.display='block'; tabConnections.classList.add('activeTab'); renderConnections(); }
+  }
+
+  // ---------- helpers ----------
+  function relDocId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__').replace(/\s+/g,'_'); }
+  function getMyRelationTo(other){
+    if(!currentUser) return null;
+    const id = relDocId(currentUser.name, other);
+    const docObj = relationshipsCache.find(r => r.id === id);
+    if(!docObj) return null;
+    if(docObj.userA.toLowerCase() === currentUser.name.toLowerCase()) return docObj.typeA || null;
+    if(docObj.userB.toLowerCase() === currentUser.name.toLowerCase()) return docObj.typeB || null;
+    return null;
+  }
+
+  function messagesChatId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__'); }
+
+  // ---------- Refresh button ----------
+  btnRefresh.addEventListener('click', async ()=>{ await Promise.all([loadAllUsers(), loadAllRequests(), loadAllRelationships(), loadAllMessages(), loadAllNotifications()]); renderUsers(); renderSuggestions(); updateReqBadge(); drawMap(); alert('Refreshed'); });
+
+  // initial tab
+  showTab('map');
+
+  // small helper to open profile via global (for inline usage)
+  window.openProfileClient = (n) => openProfile(n);
+
+  // End of module
 </script>
 </body>
 </html>
-
-
-
