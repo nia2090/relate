@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  
   <title>Relate</title>
   <style>
     body {
@@ -43,8 +42,9 @@
   </div>
 
   <script type="module">
+    // Import Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     // Your Firebase config
     const firebaseConfig = {
@@ -56,27 +56,36 @@
       appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
     };
 
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
     async function enterApp() {
       const nameInput = document.getElementById("usernameInput");
       const name = nameInput.value.trim();
-      if (!name) return alert("Please enter your name");
+      if (!name) {
+        alert("Please enter your name");
+        return;
+      }
 
-      // Save to Firebase
-      await setDoc(doc(db, "users", name.toLowerCase()), { name });
+      // Save name in Firebase
+      try {
+        await setDoc(doc(db, "users", name.toLowerCase()), { name });
+      } catch (e) {
+        console.error("Error saving to Firebase:", e);
+      }
 
+      // Move to next screen
       document.getElementById("displayName").textContent = name;
       document.getElementById("screen1").classList.remove("active");
       document.getElementById("screen2").classList.add("active");
     }
 
-    // Attach listener
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("enterBtn").addEventListener("click", enterApp);
+      const btn = document.getElementById("enterBtn");
+      btn.addEventListener("click", enterApp);
     });
   </script>
-  <!-- updated v2 -->
+
 </body>
 </html>
