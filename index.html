@@ -1,150 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Relate</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>#Relate</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #111;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #222, #111);
       color: #fff;
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
     }
-    .screen { display: none; }
-    .active { display: block; }
-    input, button {
-      padding: 8px;
-      margin: 8px;
-      border-radius: 5px;
-      border: none;
+
+    h1 {
+      font-size: 2.5rem;
+      letter-spacing: 1px;
+      color: #ff7ee5;
     }
-    button {
-      background: #ffcc00;
-      cursor: pointer;
-    }
-    canvas {
-      background: #222;
+
+    input {
       margin-top: 20px;
-      border: 1px solid #444;
+      padding: 10px 15px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      outline: none;
+      width: 200px;
+    }
+
+    button {
+      margin-top: 15px;
+      background: #ff7ee5;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #ffa7f0;
+    }
+
+    #screen2 {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #welcomeText {
+      font-size: 1.5rem;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
+  <h1>#Relate</h1>
 
-  <!-- Screen 1 -->
-  <div id="screen1" class="screen active">
-    <h2>Enter Your Name</h2>
-    <input id="usernameInput" placeholder="Your name">
+  <div id="screen1">
+    <input id="nameInput" type="text" placeholder="Enter your name" />
+    <br />
     <button id="enterBtn">Enter</button>
   </div>
 
-  <!-- Screen 2 -->
-  <div id="screen2" class="screen">
-    <h2>Welcome, <span id="displayName"></span>!</h2>
-    <p>Search for a friend:</p>
-    <input id="searchInput" placeholder="Friend name">
-    <button id="searchBtn">Search</button>
-    <div id="searchResult"></div>
-    <br>
-    <button id="mapBtn">View Relationship Map</button>
+  <div id="screen2">
+    <h2 id="welcomeText"></h2>
   </div>
 
-  <!-- Screen 3 -->
-  <div id="screen3" class="screen">
-    <h2>Relationship Map</h2>
-    <canvas id="map" width="600" height="400"></canvas><br>
-    <button id="backBtn">Back</button>
-  </div>
+  <!-- Firebase + App Logic -->
+  <script type="module">
+    // Import Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-  <script>
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    let currentUser = null;
+    // Firebase configuration (yours)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
+      authDomain: "relate-8fed6.firebaseapp.com",
+      projectId: "relate-8fed6",
+      storageBucket: "relate-8fed6.firebasestorage.app",
+      messagingSenderId: "189997542155",
+      appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
+    };
 
-    function showScreen(num) {
-      document.querySelectorAll('.screen').forEach((s, i) => {
-        s.classList.toggle('active', i === num - 1);
-      });
-    }
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    function enterApp() {
-      const name = document.getElementById('usernameInput').value.trim();
-      if (!name) return alert('Enter your name');
-      let user = users.find(u => u.name === name);
-      if (!user) {
-        user = { name, friends: [] };
-        users.push(user);
-        localStorage.setItem('users', JSON.stringify(users));
-      }
-      currentUser = user;
-      document.getElementById('displayName').textContent = name;
-      showScreen(2);
-    }
+    // Elements
+    const nameInput = document.getElementById("nameInput");
+    const enterBtn = document.getElementById("enterBtn");
+    const screen1 = document.getElementById("screen1");
+    const screen2 = document.getElementById("screen2");
+    const welcomeText = document.getElementById("welcomeText");
 
-    function searchUser() {
-      const searchName = document.getElementById('searchInput').value.trim();
-      const result = document.getElementById('searchResult');
-      if (!searchName) return result.textContent = "Enter a name.";
-      const found = users.find(u => u.name === searchName);
-      if (!found) return result.textContent = "User not found.";
-      if (found.name === currentUser.name) return result.textContent = "That's you!";
-      const existing = currentUser.friends.find(f => f.name === found.name);
-      if (existing) return result.textContent = `${found.name} is already your ${existing.relation}.`;
-      const relation = prompt(`Enter your relationship with ${found.name}:`);
-      if (!relation) return;
-      currentUser.friends.push({ name: found.name, relation });
-      found.friends.push({ name: currentUser.name, relation });
-      localStorage.setItem('users', JSON.stringify(users));
-      result.textContent = `${found.name} added as ${relation}.`;
-    }
-
-    function drawMap() {
-      const canvas = document.getElementById('map');
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (!currentUser || currentUser.friends.length === 0) {
-        ctx.fillStyle = '#fff';
-        ctx.fillText("No friends yet!", 260, 200);
+    // Main logic
+    async function enterApp() {
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert("Please enter your name.");
         return;
       }
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      ctx.fillStyle = '#ffcc00';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.fillText(currentUser.name, centerX - 15, centerY + 5);
-      const count = currentUser.friends.length;
-      const radius = 120;
-      const angleStep = (2 * Math.PI) / count;
-      currentUser.friends.forEach((f, i) => {
-        const angle = i * angleStep;
-        const x = centerX + radius * Math.cos(angle);
-        const y = centerY + radius * Math.sin(angle);
-        ctx.strokeStyle = f.relation.toLowerCase() === "friend" ? "yellow" :
-                          f.relation.toLowerCase() === "enemy" ? "red" :
-                          f.relation.toLowerCase() === "crush" ? "pink" : "lightblue";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(x, y, 20, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.fillStyle = '#000';
-        ctx.fillText(f.name, x - 10, y + 5);
-      });
+
+      try {
+        const userRef = doc(db, "users", name.toLowerCase());
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+          await setDoc(userRef, { name, joinedAt: new Date().toISOString() });
+        }
+
+        screen1.style.display = "none";
+        screen2.style.display = "flex";
+        welcomeText.textContent = `Welcome ${name}! You're now inside Relate 🔥`;
+
+      } catch (err) {
+        console.error("Error:", err);
+        alert("Could not connect to Firebase. Check console for details.");
+      }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('enterBtn').addEventListener('click', enterApp);
-      document.getElementById('searchBtn').addEventListener('click', searchUser);
-      document.getElementById('mapBtn').addEventListener('click', () => showScreen(3));
-      document.getElementById('backBtn').addEventListener('click', () => showScreen(2));
-    });
+    enterBtn.addEventListener("click", enterApp);
   </script>
-
 </body>
 </html>
