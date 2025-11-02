@@ -2,51 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Relate</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #111;
-      color: #fff;
+      background-color: #121212;
+      color: white;
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
       margin: 0;
-      padding: 0;
     }
-    .screen { display: none; padding: 20px; }
-    .active { display: block; }
-    input, button {
-      padding: 8px;
-      margin: 6px;
-      border-radius: 5px;
+    h1 {
+      color: #ffcc00;
+      margin-bottom: 20px;
+    }
+    input {
+      padding: 10px;
       border: none;
+      border-radius: 8px;
+      width: 250px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-align: center;
     }
     button {
-      background: #ffcc00;
+      padding: 10px 20px;
+      background-color: #ffcc00;
+      color: black;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.2s ease;
+    }
+    button:hover {
+      background-color: #e6b800;
     }
   </style>
 </head>
 <body>
-
-  <!-- Screen 1 -->
-  <div id="screen1" class="screen active">
-    <h2>Enter Your Name</h2>
-    <input id="usernameInput" placeholder="Your name">
-    <button id="enterBtn">Enter</button>
-  </div>
-
-  <!-- Screen 2 -->
-  <div id="screen2" class="screen">
-    <h2>Welcome, <span id="displayName"></span>!</h2>
-    <p>You’re now inside Relate.</p>
-  </div>
+  <h1>#relate</h1>
+  <input type="text" id="username" placeholder="Enter your name" />
+  <button id="enterBtn">Enter</button>
 
   <script type="module">
-    // Import Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-    // Your Firebase config
+    // ✅ Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
       authDomain: "relate-8fed6.firebaseapp.com",
@@ -56,36 +62,21 @@
       appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
     };
 
-    // Initialize Firebase
+    // ✅ Initialize Firebase
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
 
-    async function enterApp() {
-      const nameInput = document.getElementById("usernameInput");
-      const name = nameInput.value.trim();
-      if (!name) {
-        alert("Please enter your name");
-        return;
+    // ✅ Add button listener
+    document.getElementById("enterBtn").addEventListener("click", () => {
+      const name = document.getElementById("username").value.trim();
+      if (name) {
+        document.body.innerHTML = `
+          <h2>Welcome ${name}, you are now inside Relate.</h2>
+          <p>Firebase is connected successfully ✅</p>
+        `;
+      } else {
+        alert("Please enter your name first!");
       }
-
-      // Save name in Firebase
-      try {
-        await setDoc(doc(db, "users", name.toLowerCase()), { name });
-      } catch (e) {
-        console.error("Error saving to Firebase:", e);
-      }
-
-      // Move to next screen
-      document.getElementById("displayName").textContent = name;
-      document.getElementById("screen1").classList.remove("active");
-      document.getElementById("screen2").classList.add("active");
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const btn = document.getElementById("enterBtn");
-      btn.addEventListener("click", enterApp);
     });
   </script>
-
 </body>
 </html>
