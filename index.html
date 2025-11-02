@@ -1,293 +1,516 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Relate 💜</title>
-  <style>
-    body {
-      font-family: "Poppins", sans-serif;
-      background: #f4f0ff;
-      color: #2c1250;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-    }
-
-    input, button {
-      padding: 10px;
-      margin: 6px;
-      border: 1px solid #c9b6ff;
-      border-radius: 8px;
-      font-size: 15px;
-    }
-
-    input {
-      background: #fff;
-      color: #2c1250;
-      width: 200px;
-    }
-
-    button {
-      background-color: #9b6bff;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-
-    button:hover {
-      background-color: #7b4df2;
-    }
-
-    #app { margin-top: 40px; }
-
-    #searchSection { display: none; margin-top: 20px; }
-
-    #requestsTab {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      background: #9b6bff;
-      color: #fff;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 12px;
-      cursor: pointer;
-    }
-
-    #requestsSection {
-      display: none;
-      background: #fff;
-      color: #2c1250;
-      position: fixed;
-      top: 60px;
-      right: 20px;
-      width: 300px;
-      max-height: 400px;
-      overflow-y: auto;
-      border-radius: 10px;
-      padding: 12px;
-      box-shadow: 0 0 15px rgba(155, 107, 255, 0.4);
-    }
-
-    .requestItem {
-      background: #f3ecff;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      border: 1px solid #d2b9ff;
-    }
-
-    .friendItem {
-      background: #f3ecff;
-      padding: 8px;
-      border-radius: 8px;
-      margin: 5px 0;
-      border: 1px solid #d2b9ff;
-    }
-
-    h1 {
-      color: #7b4df2;
-      font-size: 32px;
-    }
-
-    #friendsHeader {
-      margin-top: 25px;
-      font-weight: 600;
-    }
-
-    .counter {
-      font-size: 14px;
-      color: #6d5ca3;
-      margin-bottom: 10px;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Relate — Map</title>
+<link rel="icon" href="data:," />
+<style>
+  :root {
+    --bg: #1a0033;
+    --card: #2b0046;
+    --accent: #9b6bff;
+    --muted: #c9b6ff;
+    --white: #ffffff;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--white)}
+  .container{display:flex;gap:20px;height:100%;padding:28px;box-sizing:border-box}
+  .sidebar{width:300px;background:linear-gradient(180deg,#250033,#22002d);border-radius:12px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,0.5)}
+  .main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
+  h1{margin:6px 0 14px;font-weight:700;color:var(--accent)}
+  label{display:block;margin-top:10px;font-size:13px;color:var(--muted)}
+  input[type="text"], select {width:100%;padding:10px;border-radius:8px;border:none;margin-top:6px;background:#fff;color:#111;box-sizing:border-box}
+  button{background:var(--accent);color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+  .usersList{margin-top:12px;max-height:55vh;overflow:auto}
+  .userRow{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,0.04)}
+  .userRow .name{font-weight:600}
+  .small{font-size:12px;color:var(--muted)}
+  .mapCard{background:linear-gradient(180deg,#170022,#0f0018);border-radius:12px;padding:12px;width:100%;height:calc(100vh - 120px);display:flex;flex-direction:column;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,0.6)}
+  .mapArea{flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative}
+  svg{width:100%;height:100%}
+  .tooltip{position:absolute;pointer-events:none;background:linear-gradient(180deg,#3b0064,#6200b0);padding:8px;border-radius:8px;color:#fff;font-size:13px;transform:translate(-50%,-120%);white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.6)}
+  .profileOverlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:320px;background:var(--card);border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+  .row{display:flex;gap:8px;align-items:center}
+  .relSelect{width:100%;padding:8px;border-radius:8px;border:none}
+  .friendsCounter{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .infoSmall{font-size:13px;color:var(--muted)}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+  .counterBubble{background:rgba(155,107,255,0.15);padding:6px 10px;border-radius:999px;color:var(--muted);font-weight:600}
+  .actionBtn{background:#6f3eff;padding:8px 10px;border-radius:8px;color:#fff;border:none;cursor:pointer}
+  .mutedText{color:var(--muted);font-size:13px}
+  /* node visuals helper classes */
+  .node-center{fill:#cfa0ff;stroke:#fff;stroke-width:2}
+  .node-friend{fill:#70c6ff;stroke:#fff;stroke-width:1}
+  .node-other{fill:#e6e6e6;stroke:#fff;stroke-width:1}
+  .line-friend{stroke:#70c6ff;stroke-width:3}
+  .line-enemy{stroke:#ff6b6b;stroke-width:3}
+  .line-crush{stroke:#ff90d0;stroke-width:3}
+  .line-grey{stroke:#a6a6a6;stroke-width:2;stroke-dasharray:6 4}
+</style>
 </head>
 <body>
-  <div id="app">
-    <h1>Relate 💜</h1>
+<div class="container">
+  <div class="sidebar">
+    <h1>Relate</h1>
 
-    <!-- Login -->
-    <div id="loginSection">
-      <input id="nameInput" placeholder="Enter your name" />
-      <button id="enterBtn">Enter</button>
-    </div>
-
-    <!-- Main Area -->
-    <div id="searchSection">
-      <button id="requestsTab">Requests</button>
-      <h2>Welcome, <span id="displayName"></span>!</h2>
-
-      <input id="searchInput" placeholder="Search user..." />
-      <button id="searchBtn">Search</button>
-      <div id="searchResult"></div>
-
-      <div id="friendsHeader">
-        <h3>Your Friends</h3>
-        <div class="counter" id="friendsCount"></div>
+    <div id="entryArea">
+      <label>Name</label>
+      <input id="nameInput" type="text" placeholder="Your name (e.g. Nisa)" />
+      <label>Class</label>
+      <select id="classSelect">
+        <option value="">Select class</option>
+        <!-- classes 1..12 -->
+      </select>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="enterBtn">Enter</button>
+        <button id="openMapBtn" class="actionBtn" style="display:none">Open Map</button>
       </div>
-      <div id="friendsList"></div>
+      <div style="margin-top:10px" class="mutedText">Logged in as: <span id="loggedAs">—</span></div>
     </div>
 
-    <!-- Requests Popup -->
-    <div id="requestsSection"></div>
+    <hr style="border:none;height:1px;background:rgba(255,255,255,0.04);margin:12px 0">
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="small">People</div>
+      <div id="pendingCount" class="counterBubble">0</div>
+    </div>
+
+    <div class="usersList" id="usersList"></div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { 
-      getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc 
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  <div class="main">
+    <div class="mapCard">
+      <div class="topbar" style="width:100%;padding:0 8px;box-sizing:border-box">
+        <div class="mutedText">Map view — center is you</div>
+        <div>
+          <button id="refreshBtn" class="actionBtn">Refresh</button>
+        </div>
+      </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
-      authDomain: "relate-8fed6.firebaseapp.com",
-      projectId: "relate-8fed6",
-      storageBucket: "relate-8fed6.firebasestorage.app",
-      messagingSenderId: "189997542155",
-      appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
-    };
+      <div class="mapArea" id="mapArea">
+        <svg id="mapSvg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="tooltip" class="tooltip" style="display:none"></div>
+        <!-- profile overlay container -->
+        <div id="profileOverlay" style="display:none"></div>
+      </div>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+      <div style="padding:12px;width:calc(100% - 24px);box-sizing:border-box">
+        <div class="infoSmall">Tip: hover nodes for quick info, click to open profile</div>
+      </div>
+    </div>
+  </div>
+</div>
 
-    let currentUser = "";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, getDocs, query, where, doc, getDoc, setDoc, updateDoc
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // --- LOGIN ---
-    document.getElementById("enterBtn").addEventListener("click", async () => {
-      const name = document.getElementById("nameInput").value.trim();
-      if (!name) return alert("Please enter your name");
+  // ---------- Firebase config (your project) ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
+    authDomain: "relate-8fed6.firebaseapp.com",
+    projectId: "relate-8fed6",
+    storageBucket: "relate-8fed6.firebasestorage.app",
+    messagingSenderId: "189997542155",
+    appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
+  };
 
-      const usersRef = collection(db, "users");
-      const snapshot = await getDocs(usersRef);
-      const names = snapshot.docs.map(d => d.data().name.toLowerCase());
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-      if (!names.includes(name.toLowerCase())) {
-        await addDoc(usersRef, { name });
-      }
+  // ---------- helpers ----------
+  const byId = id => document.getElementById(id);
+  const nameInput = byId('nameInput');
+  const classSelect = byId('classSelect');
+  const enterBtn = byId('enterBtn');
+  const openMapBtn = byId('openMapBtn');
+  const loggedAs = byId('loggedAs');
+  const usersList = byId('usersList');
+  const pendingCount = byId('pendingCount');
+  const mapSvg = byId('mapSvg');
+  const tooltip = byId('tooltip');
+  const profileOverlay = byId('profileOverlay');
+  const refreshBtn = byId('refreshBtn');
 
-      currentUser = name;
-      document.getElementById("displayName").textContent = name;
-      document.getElementById("loginSection").style.display = "none";
-      document.getElementById("searchSection").style.display = "block";
+  // populate class dropdown
+  for (let i=1;i<=12;i++){
+    const opt = document.createElement('option'); opt.value = i; opt.textContent = `Class ${i}`; classSelect.appendChild(opt);
+  }
 
-      loadFriends();
+  let currentUser = null; // {name, class}
+  let allUsers = []; // array of {name,class}
+  let allRelationships = []; // array of relationship docs
+
+  // deterministic id for relationship between two names (sorted)
+  function relId(a,b){
+    const s=[a.trim(),b.trim()].map(x=>x.toLowerCase()).sort().join('__');
+    // remove spaces for id safety
+    return s.replace(/\s+/g,'_');
+  }
+
+  // load users from Firestore
+  async function loadAllUsers(){
+    const snap = await getDocs(collection(db,'users'));
+    allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderUsersList();
+  }
+
+  // load relationships
+  async function loadRelationships(){
+    const snap = await getDocs(collection(db,'relationships'));
+    allRelationships = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+
+  // count pending requests for current user
+  async function loadPendingCount(){
+    if(!currentUser) { pendingCount.textContent = '0'; return; }
+    const q = query(collection(db,'requests'), where('to','==', currentUser.name));
+    const snap = await getDocs(q);
+    let count = 0;
+    snap.forEach(d=>{
+      if(d.data().status==='pending') count++;
     });
+    pendingCount.textContent = String(count);
+  }
 
-    // --- SEARCH USER ---
-    document.getElementById("searchBtn").addEventListener("click", async () => {
-      const searchName = document.getElementById("searchInput").value.trim();
-      const resultDiv = document.getElementById("searchResult");
-      resultDiv.innerHTML = "";
-
-      if (!searchName) return (resultDiv.textContent = "Enter a name to search.");
-
-      const usersRef = collection(db, "users");
-      const snapshot = await getDocs(usersRef);
-      const foundUser = snapshot.docs.find(
-        d => d.data().name.toLowerCase() === searchName.toLowerCase()
-      );
-
-      if (!foundUser) return (resultDiv.textContent = "No user found.");
-      if (searchName.toLowerCase() === currentUser.toLowerCase())
-        return (resultDiv.textContent = "That's you!");
-
-      const btn = document.createElement("button");
-      btn.textContent = `Send Friend Request to ${searchName}`;
-      btn.onclick = async () => {
-        const requestsRef = collection(db, "requests");
-        await addDoc(requestsRef, {
-          from: currentUser,
-          to: searchName,
-          status: "pending"
-        });
-        alert(`✅ Friend request sent to ${searchName}`);
-        resultDiv.innerHTML = "";
-      };
-
-      resultDiv.appendChild(btn);
-    });
-
-    // --- REQUESTS TAB ---
-    document.getElementById("requestsTab").addEventListener("click", async () => {
-      const box = document.getElementById("requestsSection");
-      box.innerHTML = "<h3>Friend Requests</h3>";
-
-      const q = query(collection(db, "requests"), where("to", "==", currentUser));
-      const snap = await getDocs(q);
-      if (snap.empty) {
-        box.innerHTML += "<p>No pending requests.</p>";
-      } else {
-        snap.forEach(r => {
-          const data = r.data();
-          if (data.status === "pending") {
-            const div = document.createElement("div");
-            div.className = "requestItem";
-            div.innerHTML = `<strong>${data.from}</strong> wants to be your friend<br>`;
-
-            const acceptBtn = document.createElement("button");
-            acceptBtn.textContent = "Accept";
-            acceptBtn.onclick = async () => {
-              await updateDoc(doc(db, "requests", r.id), { status: "accepted" });
-              alert(`${data.from} is now your friend!`);
-              loadFriends();
-              box.style.display = "none";
-            };
-
-            const declineBtn = document.createElement("button");
-            declineBtn.textContent = "Decline";
-            declineBtn.onclick = async () => {
-              await updateDoc(doc(db, "requests", r.id), { status: "rejected" });
-              alert(`You declined ${data.from}`);
-              box.style.display = "none";
-            };
-
-            div.appendChild(acceptBtn);
-            div.appendChild(declineBtn);
-            box.appendChild(div);
-          }
-        });
-      }
-
-      box.style.display = box.style.display === "none" ? "block" : "none";
-    });
-
-    // --- LOAD FRIENDS ---
-    async function loadFriends() {
-      const friendsDiv = document.getElementById("friendsList");
-      const counter = document.getElementById("friendsCount");
-      friendsDiv.innerHTML = "";
-      counter.innerHTML = "";
-
-      const q1 = query(collection(db, "requests"), where("from", "==", currentUser));
-      const q2 = query(collection(db, "requests"), where("to", "==", currentUser));
-      const snap1 = await getDocs(q1);
-      const snap2 = await getDocs(q2);
-
-      const friends = [];
-
-      snap1.forEach(r => {
-        const d = r.data();
-        if (d.status === "accepted") friends.push(d.to);
-      });
-      snap2.forEach(r => {
-        const d = r.data();
-        if (d.status === "accepted") friends.push(d.from);
-      });
-
-      if (friends.length === 0) {
-        counter.textContent = "You don’t have any friends yet.";
-      } else {
-        counter.textContent = `You have ${friends.length} friend${friends.length > 1 ? "s" : ""}.`;
-        friends.forEach(f => {
-          const div = document.createElement("div");
-          div.className = "friendItem";
-          div.textContent = f;
-          friendsDiv.appendChild(div);
-        });
+  // create user if not exists
+  async function createUserIfNeeded(name, klass){
+    const snap = await getDocs(collection(db,'users'));
+    const docs = snap.docs.map(d=>d.data().name.toLowerCase());
+    if(!docs.includes(name.toLowerCase())){
+      await addDoc(collection(db,'users'), { name, class: klass });
+    } else {
+      // update class if changed
+      const existing = snap.docs.find(d => d.data().name.toLowerCase() === name.toLowerCase());
+      if(existing && existing.data().class !== klass){
+        await updateDoc(doc(db,'users', existing.id), { class: klass });
       }
     }
-  </script>
+    await loadAllUsers();
+  }
+
+  // create or update relationship doc (we store in relationships collection by deterministic id)
+  async function setRelationBetween(a,b, byName, type){
+    const id = relId(a,b);
+    const ref = doc(db,'relationships', id);
+    const snapshot = await getDoc(ref);
+    const normalizedA = a.trim();
+    const normalizedB = b.trim();
+
+    const payload = {
+      userA: normalizedA,
+      userB: normalizedB,
+      // typeA/typeB will hold each person's chosen relation toward the other
+      // we set or update only the right key based on who is setting.
+    };
+
+    if(!snapshot.exists()){
+      // initial create
+      payload.typeA = (byName.toLowerCase() === normalizedA.toLowerCase()) ? type : null;
+      payload.typeB = (byName.toLowerCase() === normalizedB.toLowerCase()) ? type : null;
+      await setDoc(ref, payload);
+    } else {
+      const data = snapshot.data();
+      // find which slot corresponds to byName
+      if(byName.toLowerCase() === data.userA.toLowerCase()){
+        await updateDoc(ref, { typeA: type });
+      } else if(byName.toLowerCase() === data.userB.toLowerCase()){
+        await updateDoc(ref, { typeB: type });
+      } else {
+        // different casing or extra spaces: if byName matches normalizedB/A fallback
+        if(byName.toLowerCase() === normalizedA.toLowerCase()) await updateDoc(ref, { typeA: type });
+        else await updateDoc(ref, { typeB: type });
+      }
+    }
+    await loadRelationships();
+    drawMap();
+  }
+
+  // get relationship object between two names if exists
+  function findRelationship(a,b){
+    const id = relId(a,b);
+    return allRelationships.find(r=>r.id === id) || null;
+  }
+
+  // render sidebar users list (with + button to send request)
+  function renderUsersList(){
+    usersList.innerHTML = '';
+    const filtered = allUsers.filter(u => !currentUser || u.name.toLowerCase() !== currentUser.name.toLowerCase());
+    filtered.sort((a,b)=>a.name.localeCompare(b.name));
+    filtered.forEach(u=>{
+      const div = document.createElement('div'); div.className='userRow';
+      const left = document.createElement('div'); left.innerHTML = `<div class="name">${u.name}</div><div class="small">Class ${u.class||'–'}</div>`;
+      const right = document.createElement('div');
+      const addBtn = document.createElement('button'); addBtn.textContent = '+';
+      addBtn.title = 'Send friend request';
+      addBtn.onclick = async () => {
+        // send friend request doc
+        await addDoc(collection(db,'requests'), { from: currentUser.name, to: u.name, status: 'pending', time: Date.now() });
+        alert(`✅ Friend request sent to ${u.name}`);
+        await loadPendingCount();
+      };
+      right.appendChild(addBtn);
+      div.appendChild(left); div.appendChild(right);
+      usersList.appendChild(div);
+    });
+  }
+
+  // Draw map: svg nodes + lines
+  function drawMap(){
+    mapSvg.innerHTML = ''; // clear
+    if(!currentUser) return;
+    const centerX = 500, centerY = 350;
+    // gather direct friends: from relationships where either side accepted friend and includes currentUser
+    const direct = []; // array of user names (unique)
+    // find relationships that include currentUser
+    allRelationships.forEach(r => {
+      const a = r.userA, b = r.userB;
+      // determine relation visible: if both set and equal -> consider 'friend' if that type is 'friend' else others.
+      // We consider direct if either typeA === 'friend' or typeB === 'friend' or both have accepted friend
+      const tA = r.typeA || null;
+      const tB = r.typeB || null;
+      if(String(a).toLowerCase()===String(currentUser.name).toLowerCase()){
+        // r involves currentUser as userA -> other is b
+        if(tA === 'friend' || tB === 'friend') direct.push(b);
+      } else if(String(b).toLowerCase()===String(currentUser.name).toLowerCase()){
+        if(tA === 'friend' || tB === 'friend') direct.push(a);
+      }
+    });
+
+    // fallback: also show users that have a pending request accepted? (if none, show none)
+    // prepare nodes: center + direct friend nodes
+    const nodes = [{ name: currentUser.name, x:centerX, y:centerY, isCenter:true }];
+    const friendNames = Array.from(new Set(direct));
+    const count = friendNames.length;
+    const radius = Math.min(300, 90 + count*20);
+    friendNames.forEach((nm,i)=>{
+      const angle = (i / Math.max(1,count)) * Math.PI * 2 - Math.PI/2;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      nodes.push({ name: nm, x, y, isCenter:false });
+    });
+
+    // Also place any mutual connections among friends as nodes (if they are not center and not already listed).
+    // We'll render lines between friend nodes if a relationship exists between them.
+    // Draw lines first
+    // helper to find node by name
+    const findNode = n => nodes.find(nn => nn.name.toLowerCase() === n.toLowerCase());
+    // Draw relationship lines
+    allRelationships.forEach(r => {
+      const a = r.userA, b = r.userB;
+      // Only consider relationships where either participant is in nodes (center or friend)
+      const nA = findNode(a), nB = findNode(b);
+      if(!nA || !nB) return;
+      // determine display type:
+      const typeA = r.typeA || null;
+      const typeB = r.typeB || null;
+      let lineClass = 'line-grey'; // default
+      if(typeA && typeB && typeA === typeB){
+        // matched: color based on type
+        const t = typeA.toLowerCase();
+        if(t === 'friend') lineClass = 'line-friend';
+        else if(t === 'enemy') lineClass = 'line-enemy';
+        else if(t === 'crush') lineClass = 'line-crush';
+        else lineClass = 'line-grey';
+      } else if(typeA || typeB){
+        // only one side set or mismatch
+        lineClass = 'line-grey';
+      } else {
+        lineClass = 'line-grey';
+      }
+      // draw line between nA and nB
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', nA.x); line.setAttribute('y1', nA.y);
+      line.setAttribute('x2', nB.x); line.setAttribute('y2', nB.y);
+      line.setAttribute('class', lineClass);
+      mapSvg.appendChild(line);
+    });
+
+    // draw nodes (center first)
+    nodes.forEach(node=>{
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('data-name', node.name);
+      g.setAttribute('transform', `translate(${node.x},${node.y})`);
+      const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      circle.setAttribute('r', node.isCenter ? 28 : 20);
+      circle.setAttribute('class', node.isCenter ? 'node-center' : 'node-friend');
+      circle.style.cursor = 'pointer';
+      g.appendChild(circle);
+      const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+      text.setAttribute('y', node.isCenter ? 6 : 5);
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('font-size', node.isCenter ? '14' : '12');
+      text.setAttribute('fill','#111');
+      text.textContent = node.name;
+      g.appendChild(text);
+
+      // hover: show tooltip
+      g.addEventListener('mouseenter', async (ev) => {
+        const nm = node.name;
+        const u = allUsers.find(x => x.name.toLowerCase()===nm.toLowerCase()) || {class:'–'};
+        const rel = getRelationToCurrent(nm);
+        tooltip.style.display = 'block';
+        tooltip.innerHTML = `<strong>${nm}</strong> &middot; Class ${u.class||'–'}<br><span class="small">${rel?('Relation: '+rel):'No relation set'}</span>`;
+        positionTooltip(ev);
+      });
+      g.addEventListener('mousemove', (ev)=> positionTooltip(ev));
+      g.addEventListener('mouseleave', ()=> tooltip.style.display='none');
+
+      // click: open profile overlay
+      g.addEventListener('click', () => openProfile(node.name));
+
+      mapSvg.appendChild(g);
+    });
+
+    // positionTooltip helper
+    function positionTooltip(ev){
+      // ev client coords — translate to mapArea position
+      const mapArea = document.getElementById('mapArea');
+      const rect = mapArea.getBoundingClientRect();
+      tooltip.style.left = (ev.clientX - rect.left) + 'px';
+      tooltip.style.top = (ev.clientY - rect.top - 10) + 'px';
+    }
+  }
+
+  // get relation type string (if any) between currentUser and other
+  function getRelationToCurrent(otherName){
+    if(!currentUser) return null;
+    const r = findRelationship(currentUser.name, otherName);
+    if(!r) return null;
+    // identify which field corresponds
+    const a = r.userA, b = r.userB;
+    const tA = r.typeA || null, tB = r.typeB || null;
+    if(String(a).toLowerCase()===String(currentUser.name).toLowerCase()){
+      return tA || null;
+    } else if(String(b).toLowerCase()===String(currentUser.name).toLowerCase()){
+      return tB || null;
+    }
+    return null;
+  }
+
+  // open profile overlay inside map
+  async function openProfile(name){
+    // build overlay content
+    profileOverlay.style.display = 'block';
+    profileOverlay.innerHTML = '';
+    profileOverlay.className = 'profileOverlay';
+    const userObj = allUsers.find(u => u.name.toLowerCase()===name.toLowerCase()) || {class:'–'};
+    const title = document.createElement('div');
+    title.innerHTML = `<h3 style="margin:0 0 8px 0">${name}</h3>`;
+    const info = document.createElement('div');
+    info.className = 'infoSmall';
+    // friend count calculation
+    const friendCount = computeFriendCount(name);
+    info.innerHTML = `<div class="friendsCounter">${friendCount} friend${friendCount!==1?'s':''}</div><div class="infoSmall">Class ${userObj.class||'–'}</div>`;
+    profileOverlay.appendChild(title);
+    profileOverlay.appendChild(info);
+
+    // show your relation to them and control to set/update
+    const relationLabel = document.createElement('div');
+    relationLabel.style.marginTop = '12px';
+    relationLabel.innerHTML = `<div style="font-size:13px;margin-bottom:6px">Set your relation to ${name}</div>`;
+    const sel = document.createElement('select'); sel.className='relSelect';
+    ['','friend','enemy','crush','vibe'].forEach(opt=>{
+      const o = document.createElement('option'); o.value=opt; o.textContent = opt?opt.charAt(0).toUpperCase()+opt.slice(1):'Select relation';
+      sel.appendChild(o);
+    });
+    // preselect if exists
+    const currentRel = getRelationToCurrent(name);
+    if(currentRel) sel.value = currentRel;
+    profileOverlay.appendChild(relationLabel); profileOverlay.appendChild(sel);
+
+    const saveBtn = document.createElement('button'); saveBtn.textContent='Save relation'; saveBtn.style.marginTop='10px';
+    saveBtn.onclick = async ()=>{
+      const chosen = sel.value;
+      if(!chosen){ alert('Pick a relation'); return; }
+      await setRelationBetween(currentUser.name, name, currentUser.name, chosen);
+      alert('Relation saved');
+      profileOverlay.style.display='none';
+    };
+    profileOverlay.appendChild(saveBtn);
+
+    const closeBtn = document.createElement('button'); closeBtn.textContent='Close'; closeBtn.style.marginLeft='8px';
+    closeBtn.onclick = ()=> profileOverlay.style.display='none';
+    profileOverlay.appendChild(closeBtn);
+  }
+
+  function computeFriendCount(name){
+    let count=0;
+    allRelationships.forEach(r=>{
+      const a = r.userA, b = r.userB;
+      const tA = r.typeA, tB = r.typeB;
+      if(String(a).toLowerCase()===String(name).toLowerCase()){
+        if(tA === 'friend' || tB === 'friend') count++;
+      } else if(String(b).toLowerCase()===String(name).toLowerCase()){
+        if(tA === 'friend' || tB === 'friend') count++;
+      }
+    });
+    return count;
+  }
+
+  // ---------- UI actions ----------
+  enterBtn.addEventListener('click', async ()=>{
+    const name = nameInput.value.trim();
+    const klass = classSelect.value;
+    if(!name || !klass){ alert('Enter name and class'); return; }
+    // save local
+    currentUser = { name, class: klass };
+    localStorage.setItem('relateUser', JSON.stringify(currentUser));
+    loggedAs.textContent = `${name} (Class ${klass})`;
+    // create user if needed
+    await createUserIfNeeded(name, klass);
+    // load everything
+    await loadAllUsers();
+    await loadRelationships();
+    await loadPendingCount();
+    // show open map btn
+    openMapBtn.style.display = 'inline-block';
+    document.getElementById('openMapBtn').focus();
+    // open map view
+    document.getElementById('entryArea').style.display = 'none';
+    document.getElementById('searchSection').style.display = 'block';
+    drawMap();
+  });
+
+  openMapBtn.addEventListener('click', async ()=>{
+    await loadAllUsers();
+    await loadRelationships();
+    await loadPendingCount();
+    drawMap();
+  });
+
+  // refresh
+  refreshBtn.addEventListener('click', async ()=>{
+    await loadAllUsers();
+    await loadRelationships();
+    await loadPendingCount();
+    drawMap();
+  });
+
+  // load initial if saved
+  (async function init(){
+    const saved = localStorage.getItem('relateUser');
+    if(saved){
+      currentUser = JSON.parse(saved);
+      loggedAs.textContent = `${currentUser.name} (Class ${currentUser.class})`;
+      // show map UI
+      document.getElementById('entryArea').style.display='none';
+      document.getElementById('searchSection').style.display='block';
+      await loadAllUsers();
+      await loadRelationships();
+      await loadPendingCount();
+      drawMap();
+    } else {
+      // show entry
+      document.getElementById('entryArea').style.display='block';
+      document.getElementById('searchSection').style.display='none';
+    }
+  })();
+
+  // make sure lists update when DB updates polled by refresh button and actions
+  // optional: you can add interval polling to auto-refresh every N seconds (not included now)
+</script>
 </body>
 </html>
