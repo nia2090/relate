@@ -1,571 +1,166 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Relate — Connections Map (Firestore)</title>
-<style>
-:root{
-  --bg:#0b0012; --card:#160021; --accent:#9b6bff; --muted:#cdb8ff; --white:#ffffff;
-  --blue:#70c6ff; --green:#6ee07a; --yellow:#ffd24d; --pink:#ff90d0; --red:#ff6b6b; --whiteRel:#ffffff;
-}
-html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--white)}
-.app{display:flex;height:100vh;gap:18px;padding:18px;box-sizing:border-box}
-.sidebar{width:340px;background:linear-gradient(180deg,#22002d,#1a0023);padding:18px;border-radius:12px;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
-.main{flex:1;display:flex;flex-direction:column}
-h1{color:var(--accent);margin:0 0 10px 0;font-size:20px}
-label{display:block;margin-top:10px;font-size:13px;color:var(--muted)}
-input[type="text"], input[type="password"], select, textarea {width:100%;padding:10px;border-radius:8px;border:none;margin-top:6px;background:#fff;color:#111;box-sizing:border-box}
-button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
-.small{font-size:12px;color:var(--muted)}
-.usersList{margin-top:12px;max-height:40vh;overflow:auto}
-.userRow{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,0.03)}
-.card{background:linear-gradient(180deg,#170022,#0f0018);border-radius:12px;padding:12px;box-shadow:0 6px 20px rgba(0,0,0,0.6);display:flex;flex-direction:column;gap:12px;height:100%}
-.tabRow{display:flex;gap:8px}
-.tabRow button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px}
-.active{background:var(--accent);color:#fff;border:none}
-.map-full{flex:1;border-radius:8px;overflow:hidden;position:relative;background:radial-gradient(circle at 20% 10%, rgba(155,107,255,0.04), transparent 5%), #07000a}
-svg{width:100%;height:100%}
-.tooltip{position:absolute;pointer-events:none;background:#ffffff;padding:8px;border-radius:8px;color:#22002d;font-size:13px;transform:translate(-50%,-120%);white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,0.6)}
-.overlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:360px;background:#f6f3ff;color:#120018;border-radius:12px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6);z-index:999}
-.requestsBox{background:#fff;color:#111;padding:10px;border-radius:8px;max-height:260px;overflow:auto}
-.requestItem{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#f6f3ff;margin-bottom:8px}
-.friendItem{background:rgba(255,255,255,0.03);padding:8px;border-radius:8px;margin-bottom:6px}
-.quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.quick button{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 8px;border-radius:6px;color:var(--muted)}
-.badge{background:rgba(155,107,255,0.18);padding:6px 10px;border-radius:999px;color:var(--muted);font-weight:600}
-.smallMuted{font-size:12px;color:var(--muted)}
-.node-center{fill:#cfa0ff;stroke:#fff;stroke-width:2}
-.node-conn{fill:#70c6ff;stroke:#fff;stroke-width:1}
-.searchRow{display:flex;gap:8px;align-items:center}
-.mini-pic{width:48px;height:48px;border-radius:8px;background:#eee;display:inline-block;margin-right:8px;vertical-align:middle}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relate</title>
+  <style>
+    body {
+      background: #0a0014;
+      color: #eee;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #1b0033;
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 0 15px #7a00ff66;
+      width: 300px;
+      text-align: center;
+    }
+    input, select, button {
+      margin: 10px 0;
+      width: 90%;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+    }
+    input, select {
+      background: #2b0055;
+      color: white;
+    }
+    button {
+      background: #7a00ff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background: #9b00ff;
+    }
+    #userList {
+      margin-top: 1rem;
+      text-align: left;
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+    .user-item {
+      display: flex;
+      justify-content: space-between;
+      background: #2b0055;
+      margin: 4px 0;
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+    .user-item button {
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      background: #7a00ff;
+    }
+  </style>
 </head>
 <body>
-<div class="app">
-  <div class="sidebar">
-    <h1>Relate</h1>
-    <div id="loginPanel">
-      <label>Name</label>
-      <input id="loginName" placeholder="Your name" />
-      <label>Password</label>
-      <input id="loginPass" type="password" placeholder="Pick a password" />
-      <label>Class</label>
-      <select id="loginClass"><option value="">Select class</option></select>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button id="btnEnter">Enter</button>
-        <button id="btnLogout" style="display:none;background:#444">Logout</button>
-      </div>
-      <div style="margin-top:8px" class="smallMuted">Logged in as: <span id="who">—</span></div>
-    </div>
+  <div class="card">
+    <h2>Relate</h2>
+    <input id="name" placeholder="Enter name" />
+    <input id="password" placeholder="Enter password" type="password" />
+    <select id="classSelect">
+      <option value="">Select class</option>
+      <option>9</option>
+      <option>10</option>
+      <option>11 PCM</option>
+      <option>11 PCB</option>
+      <option>12 PCM</option>
+      <option>12 PCB</option>
+    </select>
+    <button id="enterBtn">Enter</button>
 
-    <hr style="border:none;height:1px;background:rgba(255,255,255,0.04);margin:12px 0">
-
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div class="small">People</div>
-      <div><span class="badge" id="reqBadge">0</span></div>
-    </div>
-    <div class="usersList" id="usersList"></div>
-
-    <hr style="border:none;height:1px;background:rgba(255,255,255,0.04);margin:12px 0">
-
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:center"><div class="small">You Might Know</div><div class="smallMuted">auto</div></div>
-      <div id="suggestions" style="margin-top:8px"></div>
-    </div>
-
-    <div style="margin-top:12px" class="smallMuted">Export / Import state for local testing</div>
-    <textarea id="stateArea" rows="4" style="width:100%;margin-top:6px"></textarea>
-    <div style="display:flex;gap:8px;margin-top:6px">
-      <button id="exportBtn">Copy state</button>
-      <button id="importBtn" style="background:#444">Paste state</button>
-      <button id="refreshBtn" style="background:#333">Refresh</button>
-    </div>
+    <div id="status"></div>
+    <div id="userList"></div>
   </div>
 
-  <div class="main">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="display:flex;flex-direction:column">
-          <div class="tabRow" role="tablist">
-            <button id="tabRequests">Requests</button>
-            <button id="tabUsers">Users</button>
-            <button id="tabSuggest">You Might Know</button>
-            <button id="tabMessages">Messages</button>
-            <button id="tabConnections" class="active">Connections</button>
-          </div>
-          <div class="small" id="subInfo">Use sidebar to search or send requests. Open map from Connections.</div>
-        </div>
-        <div>
-          <button id="btnViewMap">View Map</button>
-        </div>
-      </div>
+  <script type="module">
+    // Import Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-      <div id="contentRequests" style="display:none">
-        <div class="requestsBox" id="requestsBox"></div>
-      </div>
-
-      <div id="contentUsers" style="display:none">
-        <div class="searchRow"><input id="searchInput" placeholder="Search user..."><button id="searchBtn">Search</button></div>
-        <div id="searchResult" style="margin-top:12px"></div>
-      </div>
-
-      <div id="contentSuggest" style="display:none">
-        <div id="suggestBox"></div>
-      </div>
-
-      <div id="contentMessages" style="display:none">
-        <div><strong>Quick phrases</strong></div>
-        <div id="quickP" class="quick" style="margin-top:8px"></div>
-        <div style="margin-top:12px"><strong>Chats</strong></div>
-        <div id="chatsList" style="margin-top:8px"></div>
-      </div>
-
-      <div id="contentConnections" style="display:block">
-        <div style="display:flex;justify-content:space-between;align-items:center"><div><strong>Your Connections</strong></div><div class="smallMuted" id="connCount">0</div></div>
-        <div id="connList" style="margin-top:8px"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Map full-screen overlay -->
-<div id="mapOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;padding:20px;box-sizing:border-box">
-  <div style="height:100%;background:linear-gradient(180deg,#07000a,#0f0012);border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.04)">
-      <div><strong>Map — your direct network</strong></div>
-      <div><button id="closeMap">Close</button></div>
-    </div>
-    <div style="flex:1;position:relative">
-      <svg id="mapSvg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"></svg>
-      <div id="mapTooltip" class="tooltip" style="display:none"></div>
-    </div>
-  </div>
-</div>
-
-<!-- overlay for mini profile -->
-<div id="miniOverlay" class="overlay" style="display:none"></div>
-
-<!-- Firebase + App script -->
-<script type="module">
-// ---------- Firebase imports (modular) ----------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.19.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/11.19.0/firebase-firestore.js";
-import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.19.0/firebase-auth.js";
-
-// ---------- TODO: PASTE YOUR FIREBASE CONFIG HERE ----------
-const firebaseConfig = {
-  apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
-  authDomain: "relate-8fed6.firebaseapp.com",
-  projectId: "relate-8fed6",
-  storageBucket: "relate-8fed6.firebasestorage.app",
-  messagingSenderId: "189997542155",
-  appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-// ---------- UI refs ----------
-const loginName = document.getElementById('loginName');
-const loginPass = document.getElementById('loginPass');
-const loginClass = document.getElementById('loginClass');
-const btnEnter = document.getElementById('btnEnter');
-const btnLogout = document.getElementById('btnLogout');
-const who = document.getElementById('who');
-const usersList = document.getElementById('usersList');
-const suggestionsDiv = document.getElementById('suggestions');
-const reqBadge = document.getElementById('reqBadge');
-const exportBtn = document.getElementById('exportBtn');
-const importBtn = document.getElementById('importBtn');
-const stateArea = document.getElementById('stateArea');
-const refreshBtn = document.getElementById('refreshBtn');
-const tabRequests = document.getElementById('tabRequests');
-const tabUsers = document.getElementById('tabUsers');
-const tabSuggest = document.getElementById('tabSuggest');
-const tabMessages = document.getElementById('tabMessages');
-const tabConnections = document.getElementById('tabConnections');
-const contentRequests = document.getElementById('contentRequests');
-const contentUsers = document.getElementById('contentUsers');
-const contentSuggest = document.getElementById('contentSuggest');
-const contentMessages = document.getElementById('contentMessages');
-const contentConnections = document.getElementById('contentConnections');
-const requestsBox = document.getElementById('requestsBox');
-const searchInput = document.getElementById('searchInput');
-const searchBtn = document.getElementById('searchBtn');
-const searchResult = document.getElementById('searchResult');
-const suggestBox = document.getElementById('suggestBox');
-const quickP = document.getElementById('quickP');
-const chatsList = document.getElementById('chatsList');
-const connList = document.getElementById('connList');
-const connCount = document.getElementById('connCount');
-const btnViewMap = document.getElementById('btnViewMap');
-const mapOverlay = document.getElementById('mapOverlay');
-const closeMap = document.getElementById('closeMap');
-const mapSvg = document.getElementById('mapSvg');
-const mapTooltip = document.getElementById('mapTooltip');
-const miniOverlay = document.getElementById('miniOverlay');
-
-// populate classes
-for(let i=1;i<=12;i++){ const o=document.createElement('option'); o.value=i; o.textContent=`Class ${i}`; loginClass.appendChild(o); }
-
-// canned phrases
-const canned = ['hi','bye','brb','ttyl','wsp','good','wow','ok','gtg'];
-canned.forEach(p=>{ const b=document.createElement('button'); b.textContent=p; b.onclick = ()=> sendQuick(p); quickP.appendChild(b); });
-
-// ---------- state ----------
-let currentUser = JSON.parse(localStorage.getItem('relate_current')) || null;
-// caches
-let usersCache = [];
-let requestsCache = [];
-let relationshipsCache = [];
-let messagesCache = [];
-let notificationsCache = [];
-
-// ---------- helpers: firestore reads/writes ----------
-async function loadAllUsers(){
-  const snap = await getDocs(collection(db,'users'));
-  usersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function loadAllRequests(){
-  const snap = await getDocs(collection(db,'requests'));
-  requestsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function loadAllRelationships(){
-  const snap = await getDocs(collection(db,'relationships'));
-  relationshipsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function loadAllMessages(){
-  const snap = await getDocs(collection(db,'messages'));
-  messagesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function loadAllNotifications(){
-  const snap = await getDocs(collection(db,'notifications'));
-  notificationsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-
-function relId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__').replace(/\s+/g,'_'); }
-function chatId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__'); }
-
-// ---------- login flow (simple username + password stored in users collection) ----------
-btnEnter.addEventListener('click', async ()=>{
-  const name = loginName.value.trim();
-  const pass = loginPass.value;
-  const klass = loginClass.value;
-  if(!name || !pass || !klass) return alert('Enter name, password and class');
-  await loadAllUsers();
-  const exists = usersCache.find(u => u.name.toLowerCase()===name.toLowerCase());
-  if(exists){
-    if(exists.pass !== pass) return alert('Wrong password for this username.');
-    currentUser = { name: exists.name, class: exists.class, uid: exists.id };
-  } else {
-    // create user doc
-    const docRef = await addDoc(collection(db,'users'), { name, class: klass, pass });
-    currentUser = { name, class: klass, uid: docRef.id };
-  }
-  localStorage.setItem('relate_current', JSON.stringify(currentUser));
-  await postLoginInit();
-});
-
-btnLogout.addEventListener('click', ()=>{
-  localStorage.removeItem('relate_current');
-  currentUser = null;
-  window.location.reload();
-});
-
-async function postLoginInit(){
-  document.getElementById('loginPanel').style.display='none';
-  btnLogout.style.display='inline-block';
-  who.textContent = `${currentUser.name} (Class ${currentUser.class})`;
-  await Promise.all([loadAllUsers(), loadAllRequests(), loadAllRelationships(), loadAllMessages(), loadAllNotifications()]);
-  renderUsersList();
-  renderSuggestions();
-  updateReqBadge();
-  renderConnections();
-  renderChats();
-}
-
-// auto init if current user exists
-(async ()=>{ if(currentUser){ await postLoginInit(); } })();
-
-// ---------- render users list on sidebar ----------
-function renderUsersList(){
-  usersList.innerHTML='';
-  const others = usersCache.filter(u => u.name.toLowerCase() !== (currentUser?currentUser.name.toLowerCase():''));
-  others.sort((a,b)=>a.name.localeCompare(b.name));
-  others.forEach(u=>{
-    const row = document.createElement('div'); row.className='userRow';
-    row.innerHTML = `<div><div style="font-weight:700">${u.name}</div><div class="small">Class ${u.class||'–'}</div></div>`;
-    const right = document.createElement('div');
-    const sent = requestsCache.some(r => r.from.toLowerCase() === (currentUser?currentUser.name.toLowerCase():'') && r.to.toLowerCase()===u.name.toLowerCase() && r.status==='pending');
-    const connected = relationshipsCache.some(r => (r.userA.toLowerCase()===u.name.toLowerCase() && r.userB.toLowerCase()=== (currentUser?currentUser.name.toLowerCase():'')) || (r.userB.toLowerCase()===u.name.toLowerCase() && r.userA.toLowerCase()=== (currentUser?currentUser.name.toLowerCase():'')));
-    const btn = document.createElement('button');
-    if(connected){ btn.textContent='Connected'; btn.disabled=true; }
-    else if(sent){ btn.textContent='Sent ✓'; btn.disabled=true; }
-    else { btn.textContent='+'; btn.disabled = !currentUser; btn.onclick = async ()=>{ await addDoc(collection(db,'requests'), { from: currentUser.name, to: u.name, status:'pending', time: Date.now() }); await loadAllRequests(); renderUsersList(); updateReqBadge(); alert('Request sent'); }; }
-    right.appendChild(btn); row.appendChild(right); usersList.appendChild(row);
-  });
-}
-
-// ---------- suggestions: users with >=3 mutuals ----------
-function renderSuggestions(){
-  suggestionsDiv.innerHTML='';
-  if(!currentUser) { suggestionsDiv.innerHTML = '<div class="smallMuted">Login to see suggestions</div>'; return; }
-  // compute my connections
-  const myConns = relationshipsCache.filter(r => r.userA.toLowerCase()===currentUser.name.toLowerCase() || r.userB.toLowerCase()===currentUser.name.toLowerCase()).map(r => r.userA.toLowerCase()===currentUser.name.toLowerCase()? r.userB : r.userA);
-  const list = [];
-  usersCache.forEach(u=>{
-    if(u.name.toLowerCase()===currentUser.name.toLowerCase()) return;
-    if(myConns.includes(u.name)) return;
-    let mutual=0;
-    myConns.forEach(m=>{ const has = relationshipsCache.some(r => ((r.userA.toLowerCase()===m.toLowerCase() && r.userB.toLowerCase()===u.name.toLowerCase()) || (r.userB.toLowerCase()===m.toLowerCase() && r.userA.toLowerCase()===u.name.toLowerCase()))); if(has) mutual++; });
-    if(mutual>=3) list.push({user:u,mutual});
-  });
-  if(list.length===0) suggestionsDiv.innerHTML='<div class="smallMuted">No suggestions</div>';
-  list.forEach(s=>{
-    const d = document.createElement('div'); d.className='userRow';
-    d.innerHTML = `<div><div style="font-weight:700">${s.user.name}</div><div class="small">Class ${s.user.class||'–'} • ${s.mutual} mutuals</div></div>`;
-    const right = document.createElement('div');
-    const add = document.createElement('button'); add.textContent='+'; add.onclick = async ()=>{ await addDoc(collection(db,'requests'), { from: currentUser.name, to: s.user.name, status:'pending', time: Date.now() }); await loadAllRequests(); renderUsersList(); updateReqBadge(); alert('Request sent'); };
-    const x = document.createElement('button'); x.textContent='×'; x.style.marginLeft='6px'; x.onclick = ()=>{ d.style.display='none'; };
-    right.appendChild(add); right.appendChild(x); d.appendChild(right); suggestionsDiv.appendChild(d);
-  });
-}
-
-// ---------- requests tab ----------
-tabRequests.addEventListener('click', ()=> showTab('requests'));
-async function renderRequests(){
-  await loadAllRequests();
-  requestsBox.innerHTML = '<strong>Incoming Requests</strong>';
-  if(!currentUser){ requestsBox.innerHTML += '<div class="smallMuted">Login to see requests</div>'; return; }
-  const incoming = requestsCache.filter(r => r.to.toLowerCase()===currentUser.name.toLowerCase() && r.status==='pending');
-  if(incoming.length===0) requestsBox.innerHTML += '<div class="smallMuted">No pending requests</div>';
-  incoming.forEach(r=>{
-    const div = document.createElement('div'); div.className='requestItem';
-    div.innerHTML = `<div><div style="font-weight:700">${r.from}</div><div class="small">${new Date(r.time).toLocaleString()}</div></div>`;
-    const right = document.createElement('div');
-    const acc = document.createElement('button'); acc.textContent='Accept'; acc.onclick = async ()=>{
-      const id = relId(r.from, r.to);
-      const ref = doc(db,'relationships', id);
-      const snap = await getDoc(ref);
-      if(!snap.exists()) await setDoc(ref, { userA: r.from, userB: r.to, typeA: null, typeB: null, lastChangedA:null, lastChangedB:null });
-      await updateDoc(doc(db,'requests', r.id), { status:'accepted' });
-      await addDoc(collection(db,'notifications'), { to: r.from, text: `${r.to} accepted your connection.`, time: Date.now(), seen:false });
-      await loadAllRelationships(); await loadAllRequests(); renderUsersList(); renderRequests(); updateReqBadge(); renderConnections(); drawMap();
-      alert('Accepted');
+    // 🔥 Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDWJGM1oL-3i1CS8RsOCmgoJLKMe0aRCMA",
+      authDomain: "relate-8fed6.firebaseapp.com",
+      projectId: "relate-8fed6",
+      storageBucket: "relate-8fed6.firebasestorage.app",
+      messagingSenderId: "189997542155",
+      appId: "1:189997542155:web:5a16a249d6b1daf8cad00e"
     };
-    const dec = document.createElement('button'); dec.textContent='Decline'; dec.style.marginLeft='6px'; dec.onclick = async ()=>{ await updateDoc(doc(db,'requests', r.id), { status:'rejected' }); await loadAllRequests(); renderUsersList(); renderRequests(); updateReqBadge(); alert('Declined'); };
-    right.appendChild(acc); right.appendChild(dec); div.appendChild(right); requestsBox.appendChild(div);
-  });
-}
 
-function showTab(tab){
-  contentRequests.style.display = tab==='requests'?'block':'none';
-  contentUsers.style.display = tab==='users'?'block':'none';
-  contentSuggest.style.display = tab==='suggest'?'block':'none';
-  contentMessages.style.display = tab==='messages'?'block':'none';
-  contentConnections.style.display = tab==='connections'?'block':'none';
-  [tabRequests,tabUsers,tabSuggest,tabMessages,tabConnections].forEach(b=>b.classList.remove('active'));
-  if(tab==='requests') tabRequests.classList.add('active');
-  if(tab==='users') tabUsers.classList.add('active');
-  if(tab==='suggest') tabSuggest.classList.add('active');
-  if(tab==='messages') tabMessages.classList.add('active');
-  if(tab==='connections') tabConnections.classList.add('active');
-}
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-// users search tab
-tabUsers.addEventListener('click', ()=> showTab('users'));
-searchBtn.addEventListener('click', async ()=>{
-  const q = searchInput.value.trim();
-  searchResult.innerHTML='';
-  if(!q) return searchResult.textContent = 'Enter name to search';
-  await loadAllUsers();
-  const found = usersCache.find(u => u.name.toLowerCase()===q.toLowerCase());
-  if(!found) return searchResult.textContent = 'User not found';
-  const div = document.createElement('div');
-  div.innerHTML = `<div style="font-weight:700">${found.name}</div><div class="small">Class ${found.class||'–'}</div>`;
-  const btn = document.createElement('button');
-  const sent = requestsCache.some(r=> r.from.toLowerCase()===currentUser.name.toLowerCase() && r.to.toLowerCase()===found.name.toLowerCase() && r.status==='pending');
-  const connected = relationshipsCache.some(r => r.id === relId(found.name, currentUser.name));
-  if(connected){ btn.textContent='Connected'; btn.disabled=true; }
-  else if(sent){ btn.textContent='Sent ✓'; btn.disabled=true; }
-  else{ btn.textContent='Send Request'; btn.onclick = async ()=> { await addDoc(collection(db,'requests'), { from: currentUser.name, to: found.name, status:'pending', time: Date.now() }); await loadAllRequests(); renderUsersList(); updateReqBadge(); alert('Request sent'); }; }
-  div.appendChild(btn); searchResult.appendChild(div);
-});
+    const nameInput = document.getElementById("name");
+    const passInput = document.getElementById("password");
+    const classSelect = document.getElementById("classSelect");
+    const enterBtn = document.getElementById("enterBtn");
+    const statusDiv = document.getElementById("status");
+    const userList = document.getElementById("userList");
 
-// suggestions tab
-tabSuggest.addEventListener('click', ()=> showTab('suggest'));
+    // Load all users
+    async function loadUsers() {
+      userList.innerHTML = "<i>Loading users...</i>";
+      const q = query(collection(db, "users"));
+      const snapshot = await getDocs(q);
+      userList.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.classList.add("user-item");
+        div.innerHTML = `<span>${data.name} (${data.class})</span><button disabled>View</button>`;
+        userList.appendChild(div);
+      });
+    }
 
-// messages tab
-tabMessages.addEventListener('click', ()=> showTab('messages'));
-async function renderChats(){
-  await loadAllMessages();
-  chatsList.innerHTML = '';
-  if(!currentUser) return chatsList.innerHTML = '<div class="smallMuted">Login to chat</div>';
-  const myConns = relationshipsCache.filter(r => r.userA.toLowerCase()===currentUser.name.toLowerCase() || r.userB.toLowerCase()===currentUser.name.toLowerCase());
-  if(myConns.length===0) chatsList.innerHTML = '<div class="smallMuted">No connections</div>';
-  myConns.forEach(c=>{
-    const other = c.userA.toLowerCase()===currentUser.name.toLowerCase()? c.userB : c.userA;
-    const id = chatId(currentUser.name, other);
-    const last = messagesCache.filter(m=>m.chatId===id).sort((a,b)=>b.time-a.time)[0];
-    const div = document.createElement('div'); div.className='friendItem'; div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${other}</strong><div class="small">${ last ? (last.from + ': ' + last.text) : 'No messages' }</div></div><div><button onclick="openChat('${other.replace(/'/g,"\\'")}')">Open</button></div></div>`;
-    chatsList.appendChild(div);
-  });
-}
+    // Add or verify user
+    async function enterApp() {
+      const name = nameInput.value.trim();
+      const password = passInput.value.trim();
+      const classValue = classSelect.value;
 
-// connections tab
-tabConnections.addEventListener('click', ()=> showTab('connections'));
-async function renderConnections(){
-  await loadAllRelationships();
-  connList.innerHTML='';
-  if(!currentUser) return connList.innerHTML = '<div class="smallMuted">Login to see connections</div>';
-  const my = relationshipsCache.filter(r => r.userA.toLowerCase()===currentUser.name.toLowerCase() || r.userB.toLowerCase()===currentUser.name.toLowerCase());
-  connCount.textContent = my.length;
-  if(my.length===0) connList.innerHTML = '<div class="smallMuted">No connections</div>';
-  my.forEach(c=>{
-    const other = c.userA.toLowerCase()===currentUser.name.toLowerCase() ? c.userB : c.userA;
-    const div = document.createElement('div'); div.className='friendItem';
-    div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div>${other}</div><div><button onclick="openMiniProfile('${other.replace(/'/g,"\\'")}')">Profile</button></div></div>`;
-    connList.appendChild(div);
-  });
-}
+      if (!name || !password || !classValue) {
+        statusDiv.innerHTML = "Fill all fields.";
+        return;
+      }
 
-// requests badge
-async function updateReqBadge(){ await loadAllRequests(); const c = requestsCache.filter(r=> r.to.toLowerCase()=== (currentUser?currentUser.name.toLowerCase():'' ) && r.status==='pending').length; reqBadge.textContent = String(c); }
+      // Check if user exists
+      const q = query(collection(db, "users"), where("name", "==", name));
+      const snap = await getDocs(q);
+      if (snap.size > 0) {
+        statusDiv.innerHTML = `Welcome back, ${name}!`;
+      } else {
+        await addDoc(collection(db, "users"), { name, password, class: classValue });
+        statusDiv.innerHTML = `Welcome, ${name}! Added to database.`;
+      }
 
-// open chat (global)
-window.openChat = async function(name){
-  // overlay chat
-  miniOverlay.style.display='block'; miniOverlay.innerHTML='';
-  const title = document.createElement('div'); title.innerHTML = `<h3 style="margin:0">Chat with ${name}</h3>`; miniOverlay.appendChild(title);
-  const messagesDiv = document.createElement('div'); messagesDiv.style.maxHeight='220px'; messagesDiv.style.overflow='auto'; messagesDiv.style.background='#fff'; messagesDiv.style.color='#111'; messagesDiv.style.padding='8px'; messagesDiv.style.borderRadius='8px'; messagesDiv.style.marginTop='8px';
-  miniOverlay.appendChild(messagesDiv);
-  const input = document.createElement('input'); input.placeholder='Type a message'; input.style.marginTop='8px';
-  const send = document.createElement('button'); send.textContent='Send'; send.style.marginLeft='6px';
-  send.onclick = async ()=>{ const t = input.value.trim(); if(!t) return; await addDoc(collection(db,'messages'), { chatId: chatId(currentUser.name, name), from: currentUser.name, to: name, text: t, time: Date.now() }); input.value=''; await loadAllMessages(); renderMessages(messagesDiv, chatId(currentUser.name, name)); await renderChats(); };
-  miniOverlay.appendChild(input); miniOverlay.appendChild(send);
-  const close = document.createElement('button'); close.textContent='Close'; close.style.marginLeft='8px'; close.onclick = ()=> miniOverlay.style.display='none'; miniOverlay.appendChild(close);
-  await loadAllMessages(); renderMessages(messagesDiv, chatId(currentUser.name, name));
-};
+      loadUsers();
+    }
 
-function renderMessages(container, chatIdLocal){ container.innerHTML=''; const msgs = messagesCache.filter(m=>m.chatId===chatIdLocal).sort((a,b)=>a.time-b.time); msgs.forEach(m=>{ const d=document.createElement('div'); d.style.margin='6px 0'; d.style.padding='6px'; d.style.borderRadius='6px'; d.style.background = m.from===currentUser.name? '#dfeaff':'#ffeef2'; d.textContent = `${m.from}: ${m.text}`; container.appendChild(d); }); }
+    enterBtn.addEventListener("click", enterApp);
+    passInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") enterApp();
+    });
 
-// quick send from tab
-function sendQuick(p){
-  const openH3 = miniOverlay.querySelector('h3'); if(!openH3) { alert('Open a chat first'); return; }
-  const name = openH3.textContent.replace('Chat with ','').trim();
-  addDoc(collection(db,'messages'), { chatId: chatId(currentUser.name, name), from: currentUser.name, to: name, text: p, time: Date.now() }).then(async ()=>{ await loadAllMessages(); renderMessages(miniOverlay.querySelector('div[style*=\"maxHeight\"]'), chatId(currentUser.name, name)); await renderChats(); });
-}
-
-// open mini profile from various places
-window.openMiniProfile = async function(name){ miniOverlay.style.display='block'; miniOverlay.innerHTML=''; const user = usersCache.find(u=>u.name.toLowerCase()===name.toLowerCase()) || {}; const title = document.createElement('div'); title.innerHTML = `<div style="display:flex;align-items:center"><div class="mini-pic"></div><div><strong>${name}</strong><div class="small">${user.class?'Class '+user.class:''}</div></div></div>`; miniOverlay.appendChild(title); const relWrap = document.createElement('div'); relWrap.style.marginTop='12px'; const cid = relId(currentUser.name, name); const conn = relationshipsCache.find(r => r.id===cid); if(conn){ const sel = document.createElement('select'); ['','Friends','Close Friends','Best Friends','Crush','Hate','Classmate'].forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent = v? v : 'Select relation'; sel.appendChild(o); }); const existing = (conn.userA.toLowerCase()===currentUser.name.toLowerCase()? conn.typeA : conn.typeB); if(existing) sel.value = existing; relWrap.appendChild(sel); const save = document.createElement('button'); save.textContent='Save relation'; save.style.marginLeft='8px'; save.onclick = async ()=>{ const chosen = sel.value; if(!chosen) return alert('Choose relation'); // cooldown check
-      const nowTs = Date.now();
-      const isA = conn.userA.toLowerCase()===currentUser.name.toLowerCase();
-      const last = isA? conn.lastChangedA : conn.lastChangedB;
-      if(last && (nowTs - last < 7*24*3600*1000)) return alert('Change allowed only once per 7 days');
-      const ref = doc(db,'relationships', cid);
-      if(isA) await updateDoc(ref, { typeA: chosen, lastChangedA: Date.now() }); else await updateDoc(ref, { typeB: chosen, lastChangedB: Date.now() });
-      // notify other
-      const other = isA? conn.userB : conn.userA;
-      await addDoc(collection(db,'notifications'), { to: other, text: `${currentUser.name} updated your connection status — pick your view.`, time: Date.now(), seen:false });
-      await loadAllRelationships(); drawMap(); renderConnections(); alert('Saved'); miniOverlay.style.display='none';
-    }; relWrap.appendChild(save); miniOverlay.appendChild(relWrap); } else { const btn = document.createElement('button'); btn.textContent='Not connected'; btn.style.marginTop='12px'; btn.disabled=true; miniOverlay.appendChild(btn); } const chatBtn = document.createElement('button'); chatBtn.textContent='Open Chat'; chatBtn.style.marginTop='12px'; chatBtn.onclick = ()=> { openChat(name); }; miniOverlay.appendChild(chatBtn); const close = document.createElement('button'); close.textContent='Close'; close.style.marginLeft='8px'; close.onclick = ()=> miniOverlay.style.display='none'; miniOverlay.appendChild(close); };
-
-// ---------- Map ----------
-btnViewMap.addEventListener('click', async ()=>{ await Promise.all([loadAllUsers(), loadAllRelationships()]); mapOverlay.style.display='block'; drawMap(); });
-closeMap.addEventListener('click', ()=> mapOverlay.style.display='none');
-
-function drawMap(){
-  mapSvg.innerHTML = '';
-  mapTooltip.style.display='none';
-  if(!currentUser) return;
-  const centerX = 500, centerY = 350;
-  const centerNode = { name: currentUser.name, x:centerX, y:centerY, r:32, isCenter:true };
-  // direct connections
-  const direct = relationshipsCache.filter(r=> r.userA && r.userB && (r.userA.toLowerCase()===currentUser.name.toLowerCase() || r.userB.toLowerCase()===currentUser.name.toLowerCase()));
-  const friendNames = Array.from(new Set(direct.map(r => r.userA.toLowerCase()===currentUser.name.toLowerCase() ? r.userB : r.userA)));
-  const nodes = [centerNode];
-  const count = friendNames.length;
-  const radius = Math.min(300, 90 + count*28);
-  friendNames.forEach((nm,i)=>{ const angle = (i / Math.max(1,count)) * Math.PI*2 - Math.PI/2; const x = centerX + radius * Math.cos(angle); const y = centerY + radius * Math.sin(angle); nodes.push({ name: nm, x, y, r:20 }); });
-  function findNode(name){ return nodes.find(n => n.name.toLowerCase() === name.toLowerCase()); }
-  // draw lines for relationships among visible nodes
-  relationshipsCache.forEach(r => {
-    const nA = findNode(r.userA), nB = findNode(r.userB);
-    if(!nA || !nB) return;
-    const tA = r.typeA || null, tB = r.typeB || null;
-    let draw=false, dashed=false, color='#9b9b9b';
-    if(tA && tB){ draw=true; if(tA===tB) color = relationColor(tA); else color='#9b9b9b'; dashed=false; }
-    else if(tA || tB){ draw=true; dashed=true; color='#9b9b9b'; }
-    if(!draw) return;
-    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1', nA.x); line.setAttribute('y1', nA.y); line.setAttribute('x2', nB.x); line.setAttribute('y2', nB.y);
-    line.setAttribute('stroke-width', 3);
-    if(dashed) line.setAttribute('stroke-dasharray','8 6');
-    line.setAttribute('stroke', color);
-    mapSvg.appendChild(line);
-  });
-  // draw nodes
-  nodes.forEach(node=>{
-    const g = document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('transform', `translate(${node.x},${node.y})`); g.setAttribute('data-name', node.name);
-    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle'); circle.setAttribute('r', node.r); circle.setAttribute('fill', node.isCenter? '#cfa0ff':'#70c6ff'); circle.setAttribute('stroke','#fff'); circle.setAttribute('stroke-width', node.isCenter?2:1); circle.style.cursor='pointer'; g.appendChild(circle);
-    const text = document.createElementNS('http://www.w3.org/2000/svg','text'); text.setAttribute('y', node.isCenter?6:4); text.setAttribute('text-anchor','middle'); text.setAttribute('font-size', node.isCenter?13:11); text.setAttribute('fill','#111'); text.textContent = node.name; g.appendChild(text);
-    g.addEventListener('mouseenter', (ev)=>{ const user = usersCache.find(u=>u.name.toLowerCase()===node.name.toLowerCase())||{}; const myRel = getMyRelationTo(node.name); mapTooltip.style.display='block'; mapTooltip.innerHTML = `<strong>${node.name}</strong><br><span class="small">${user.class?('Class '+user.class):''}</span><br><span class="small">${myRel?('You set: '+myRel):'Relation not set'}</span>`; positionMapTooltip(ev); });
-    g.addEventListener('mousemove', positionMapTooltip); g.addEventListener('mouseleave', ()=> mapTooltip.style.display='none');
-    g.addEventListener('click', ()=> { openMiniAt(node.x,node.y,node.name); });
-    mapSvg.appendChild(g);
-  });
-}
-function positionMapTooltip(ev){ const rect = mapSvg.getBoundingClientRect(); mapTooltip.style.left = (ev.clientX - rect.left) + 'px'; mapTooltip.style.top = (ev.clientY - rect.top - 12) + 'px'; }
-
-function openMiniAt(x,y,name){
-  miniOverlay.style.display='block'; miniOverlay.style.left = (x+20)+'px'; miniOverlay.style.top = (y+20)+'px'; miniOverlay.innerHTML='';
-  const user = usersCache.find(u=>u.name.toLowerCase()===name.toLowerCase())||{};
-  miniOverlay.innerHTML = `<div style="display:flex;align-items:center"><div class="mini-pic"></div><div style="margin-left:8px"><strong>${name}</strong><div class="small">${user.class?('Class '+user.class):''}</div></div></div>`;
-  // relation state & set button
-  const cid = relId(currentUser.name, name);
-  const conn = relationshipsCache.find(r=>r.id===cid);
-  if(conn){
-    const relText = document.createElement('div'); relText.style.marginTop='8px'; relText.textContent = 'Your relation: ' + (getMyRelationTo(name) || 'Not set'); miniOverlay.appendChild(relText);
-    const setBtn = document.createElement('button'); setBtn.textContent='Set / Change Relation'; setBtn.style.marginTop='8px'; setBtn.onclick = ()=> { openMiniProfile(name); }; miniOverlay.appendChild(setBtn);
-  } else {
-    const note = document.createElement('div'); note.className='smallMuted'; note.style.marginTop='8px'; note.textContent='Not connected'; miniOverlay.appendChild(note);
-  }
-  // quick messages
-  const msgWrap = document.createElement('div'); msgWrap.style.marginTop='10px'; msgWrap.innerHTML = '<div style="font-weight:700">Quick messages</div>'; canned.slice(0,6).forEach(p=>{ const b=document.createElement('button'); b.textContent=p; b.style.margin='6px 6px 0 0'; b.onclick = async ()=>{ await addDoc(collection(db,'messages'), { chatId: chatId(currentUser.name, name), from: currentUser.name, to: name, text: p, time: Date.now() }); await loadAllMessages(); }; msgWrap.appendChild(b); }); miniOverlay.appendChild(msgWrap);
-  const close = document.createElement('button'); close.textContent='Close'; close.style.marginTop='12px'; close.onclick = ()=> miniOverlay.style.display='none'; miniOverlay.appendChild(close);
-}
-
-// relation color map
-function relationColor(t){ if(!t) return '#9b9b9b'; const s=t.toLowerCase(); if(s.includes('best')) return getComputedStyle(document.documentElement).getPropertyValue('--yellow') || '#ffd24d'; if(s.includes('close')) return getComputedStyle(document.documentElement).getPropertyValue('--green') || '#6ee07a'; if(s.includes('friend')) return getComputedStyle(document.documentElement).getPropertyValue('--blue') || '#70c6ff'; if(s.includes('crush')) return getComputedStyle(document.documentElement).getPropertyValue('--pink') || '#ff90d0'; if(s.includes('hate')) return getComputedStyle(document.documentElement).getPropertyValue('--red') || '#ff6b6b'; if(s.includes('class')) return getComputedStyle(document.documentElement).getPropertyValue('--whiteRel') || '#ffffff'; return '#9b9b9b'; }
-
-// ---------- utility functions ----------
-function relId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__').replace(/\s+/g,'_'); }
-function chatId(a,b){ return [a.trim().toLowerCase(), b.trim().toLowerCase()].sort().join('__'); }
-
-// open mini profile full (used in connections and map)
-function openMiniProfile(name){ openMiniAt(520,120,name); openMiniAt; openMiniAt; }
-
-// export/import state (local helper for testing) - reads Firestore collections and dumps JSON
-exportBtn.addEventListener('click', async ()=>{
-  await Promise.all([loadAllUsers(), loadAllRequests(), loadAllRelationships(), loadAllMessages(), loadAllNotifications()]);
-  const snapshot = { users: usersCache, requests: requestsCache, relationships: relationshipsCache, messages: messagesCache, notifications: notificationsCache };
-  const txt = JSON.stringify(snapshot, null, 2);
-  try{ await navigator.clipboard.writeText(txt); alert('State copied to clipboard'); }catch(e){ stateArea.value = txt; alert('State copied to textarea'); }
-});
-importBtn.addEventListener('click', ()=>{ const txt = stateArea.value.trim(); if(!txt) return alert('Paste exported state JSON'); try{ const parsed = JSON.parse(txt); console.log(parsed); alert('Imported data is only for local testing — not written to Firestore by this helper'); }catch(e){ alert('Bad JSON'); } });
-
-// refresh button
-refreshBtn.addEventListener('click', async ()=>{ await Promise.all([loadAllUsers(), loadAllRequests(), loadAllRelationships(), loadAllMessages(), loadAllNotifications()]); renderUsersList(); renderSuggestions(); updateReqBadge(); renderConnections(); renderChats(); drawMap(); alert('Refreshed'); });
-
-// initial tab state
-showTab('connections');
-
-// expose some functions globally for inline use
-window.openChat = window.openChat;
-window.openMiniProfile = openMiniProfile;
-window.openProfile = openMiniProfile;
-
-// End of module
-</script>
+    loadUsers();
+  </script>
 </body>
 </html>
